@@ -1,0 +1,309 @@
+---
+title: 'Manual Entry'
+description: 'Record transactions manually using forms, voice input, or photo uploads with automatic validation'
+icon: 'pen-to-square'
+---
+
+Manual Entry allows you to record financial transactions directly through intuitive forms, supporting text input, photo uploads, and intelligent OCR for receipt scanning.
+
+## Overview
+
+While Sistema Financiero offers automated tracking through Telegram bots, Manual Entry gives you direct control to record transactions through the web interface or by uploading photos of receipts.
+
+<Note>
+Manual Entry is particularly useful for batch entry sessions, when you have multiple receipts to process, or when you prefer a visual form interface.
+</Note>
+
+## Entry Methods
+
+### 1. Daily Cut Form (Corte Diario)
+
+The Daily Cut feature allows you to record all your income for the day in a single, streamlined form.
+
+#### How It Works
+
+<Steps>
+  <Step title="Access Daily Cut">
+    Navigate to the Daily Cut page from the main navigation menu
+  </Step>
+  
+  <Step title="Enter Amounts by Category">
+    The form displays all income categories with fields for:
+    - **Quantity**: Number of units/transactions
+    - **Total Amount**: Total income in that category
+  </Step>
+  
+  <Step title="Add Your Name (Optional)">
+    Enter who is registering the entry in the "Registrado por" field
+  </Step>
+  
+  <Step title="Review Totals">
+    The form automatically calculates:
+    - Total daily income
+    - Total number of transactions
+  </Step>
+  
+  <Step title="Submit">
+    Click "Registrar Corte Completo" to save all entries at once
+  </Step>
+</Steps>
+
+#### Income Categories
+
+<CardGroup cols={2}>
+  <Card title="Tours" icon="landmark">
+    Income from guided tours and experiences
+  </Card>
+  <Card title="Comedor" icon="utensils">
+    Restaurant and dining income
+  </Card>
+  <Card title="Reservaciones" icon="calendar-check">
+    Reservation and booking fees
+  </Card>
+  <Card title="Anticipos" icon="credit-card">
+    Advance payments and deposits
+  </Card>
+  <Card title="Otros Ingresos" icon="dollar-sign">
+    Other miscellaneous income
+  </Card>
+</CardGroup>
+
+<Tip>
+The Daily Cut form only accepts positive amounts. If you don't have income for a category, simply leave it at 0.
+</Tip>
+
+### 2. Photo Upload with OCR
+
+Upload photos of receipts, invoices, or tickets for automatic data extraction.
+
+#### Photo Upload Process
+
+<Steps>
+  <Step title="Prepare Your Receipt">
+    Take a clear photo of your receipt or ticket:
+    - Good lighting
+    - All text visible
+    - Receipt laid flat
+    - No glare or shadows
+  </Step>
+  
+  <Step title="Upload the Image">
+    Use the image upload endpoint:
+    ```bash
+    POST /api/upload-image
+    Content-Type: multipart/form-data
+    ```
+  </Step>
+  
+  <Step title="AI Analysis">
+    The system uses Google Gemini 2.5 Flash to:
+    - Verify it's a valid receipt
+    - Extract the total amount
+    - Identify the merchant/store
+    - Suggest the appropriate category
+    - List purchased items
+    - Extract the date
+  </Step>
+  
+  <Step title="Review Extracted Data">
+    The system returns structured data:
+    - Amount (numeric)
+    - Merchant name
+    - Suggested category
+    - Items list
+    - Date
+    - Description
+  </Step>
+  
+  <Step title="Confirm or Edit">
+    Review the extracted information and make any necessary corrections before saving
+  </Step>
+</Steps>
+
+#### Supported Receipt Types
+
+- Gas station receipts
+- Supermarket invoices
+- Restaurant bills
+- Retail store receipts
+- Service invoices
+- Utility bills
+
+<Warning>
+The OCR system will reject:
+- Screenshots of text messages
+- Random photos that aren't receipts
+- Blurry or illegible images
+- Documents that aren't purchase-related
+</Warning>
+
+#### OCR Response Format
+
+When a valid receipt is detected:
+
+```json
+{
+  "es_ticket": true,
+  "monto": 450.50,
+  "comercio": "Pemex",
+  "categoria_sugerida": "Transporte",
+  "items": ["Magna Premium 30L", "Total"],
+  "fecha": "2025-10-06",
+  "descripcion": "Llenado de combustible en Pemex"
+}
+```
+
+When an invalid image is uploaded:
+
+```json
+{
+  "es_ticket": false,
+  "razon": "Esta es una captura de pantalla de una conversación",
+  "sugerencia": "Por favor sube una foto de un ticket o factura"
+}
+```
+
+### 3. Recurring Expenses Form
+
+For expenses that occur automatically on specific days each month, use the Recurring Expenses feature.
+
+#### Setting Up Recurring Expenses
+
+<Steps>
+  <Step title="Navigate to Recurring Expenses">
+    Access from the main navigation menu
+  </Step>
+  
+  <Step title="Click Add New">
+    Click the "Añadir Gasto Recurrente" button
+  </Step>
+  
+  <Step title="Fill the Form">
+    Enter required information:
+    - **Name**: Description (e.g., "Netflix", "Rent")
+    - **Day of Month**: 1-31 when the charge occurs
+    - **Amount**: Monthly charge amount
+    - **Category**: Select from expense categories
+    - **Payment Method**: Cash, Card, or Transfer
+    - **Account**: Optional account name
+  </Step>
+  
+  <Step title="Set Active Status">
+    Toggle the "Activo" checkbox to enable automatic processing
+  </Step>
+  
+  <Step title="Save">
+    Click "Crear Gasto" to save the recurring expense
+  </Step>
+</Steps>
+
+<Note>
+Recurring expenses are automatically processed daily. When the current day matches the configured day, the system creates a transaction entry automatically.
+</Note>
+
+## Form Validation
+
+### Required Fields
+
+All forms include validation to ensure data quality:
+
+- **Amount fields**: Must be numeric and greater than 0
+- **Date fields**: Must be valid dates
+- **Category fields**: Must select from predefined categories
+- **Day of month** (recurring): Must be between 1-31
+
+### Error Handling
+
+<CardGroup cols={2}>
+  <Card title="Validation Errors" icon="circle-exclamation" color="#ef4444">
+    Red alert boxes show specific field errors:
+    - Missing required fields
+    - Invalid number formats
+    - Out-of-range values
+  </Card>
+  <Card title="Success Messages" icon="circle-check" color="#10b981">
+    Green confirmation boxes appear after successful saves:
+    - Transaction recorded
+    - Number of items processed
+    - Updated totals
+  </Card>
+</CardGroup>
+
+## Categories System
+
+### Expense Categories
+
+- **Alimentación**: Food and groceries
+- **Transporte**: Gas, public transport, vehicle maintenance
+- **Vivienda**: Rent, utilities, home maintenance
+- **Salud**: Medical expenses, insurance, pharmacy
+- **Entretenimiento**: Entertainment, subscriptions, hobbies
+- **Educación**: Education, courses, books
+- **Otros Gastos**: Miscellaneous expenses
+- **Suscripciones**: Recurring subscriptions
+
+### Income Categories
+
+- **Tours**: Guided tours and experiences
+- **Comedor**: Restaurant and dining income
+- **Reservaciones**: Booking and reservation fees
+- **Anticipos**: Advance payments
+- **Otros Ingresos**: Other income sources
+
+<Tip>
+The category system is predefined to ensure consistency in reporting and analytics. Choose the closest match for accurate categorization.
+</Tip>
+
+## Payment Methods
+
+All manual entries support three payment methods:
+
+- **Efectivo** (Cash)
+- **Tarjeta** (Card)
+- **Transferencia** (Bank Transfer)
+
+## User Interface Features
+
+### Visual Feedback
+
+- **Real-time calculations**: Totals update as you type
+- **Loading states**: Spinners during form submission
+- **Disabled states**: Submit button disabled until valid data entered
+- **Color coding**: Success in green, errors in red
+
+### Responsive Design
+
+- **Mobile-optimized**: Touch-friendly input fields
+- **Tablet layout**: Optimized grid for medium screens
+- **Desktop**: Full form width with multiple columns
+
+### Accessibility
+
+- Clear labels for all form fields
+- Keyboard navigation support
+- High contrast mode compatible
+- Screen reader friendly
+
+## Best Practices
+
+<Card title="Photo Quality Tips" icon="camera">
+  - Use natural lighting or good artificial light
+  - Hold the camera steady or use a flat surface
+  - Ensure all text is in focus
+  - Avoid shadows and glare
+  - Crop to just the receipt area
+</Card>
+
+<Card title="Data Entry Tips" icon="keyboard">
+  - Enter transactions daily to avoid backlog
+  - Use recurring expenses for predictable charges
+  - Double-check amounts before submitting
+  - Add descriptive notes in the description field
+  - Keep photos of receipts even after OCR
+</Card>
+
+## Related Features
+
+- [Dashboard](/features/dashboard) - View entered transactions
+- [Recurring Expenses](/features/recurring-expenses) - Automate regular expenses
+- [Reports](/features/reports) - Generate reports from entered data

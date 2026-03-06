@@ -1,97 +1,80 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Welcome to Sistema Financiero"
+description: "Personal finance management with AI-powered transaction entry, OCR receipt scanning, and real-time analytics"
 ---
 
-## Setting up
+<div className="bg-gradient-to-r from-[#94cb04]/10 to-[#545454]/10 rounded-lg p-8 mb-8">
+  <h1 className="text-4xl font-bold text-[#1a1a1a] dark:text-white mb-4">
+    Take Control of Your Finances
+  </h1>
+  <p className="text-lg text-[#545454] dark:text-gray-300 mb-6">
+    Sistema Financiero is a modern personal finance management system that combines AI-powered transaction entry, OCR receipt scanning, and real-time analytics to help you track expenses and income effortlessly.
+  </p>
+  <CardGroup cols={2}>
+    <Card title="Get Started" icon="rocket" href="/quickstart">
+      Set up Sistema Financiero in minutes
+    </Card>
+    <Card title="View on GitHub" icon="github" href="https://github.com/daniel-carreon/sistema-financiero-app">
+      Explore the source code
+    </Card>
+  </CardGroup>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={3}>
+  <Card title="Interactive Dashboard" icon="chart-line" href="/features/dashboard">
+    Track KPIs and visualize trends with real-time charts
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="AI Chat Assistant" icon="robot" href="/features/ai-chat">
+    Register transactions naturally through conversation
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="OCR Receipt Scanning" icon="camera" href="/features/ocr-scanning">
+    Scan receipts and extract transaction data automatically
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Manual Entry" icon="pen-to-square" href="/features/manual-entry">
+    Quick form-based transaction entry with validation
   </Card>
-</Columns>
+  <Card title="Recurring Expenses" icon="repeat" href="/features/recurring-expenses">
+    Automate regular expense tracking
+  </Card>
+  <Card title="Reports & Analytics" icon="file-chart-column" href="/features/reports">
+    Generate insights from your financial data
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Tech Stack
 
-Everything you need to create world-class documentation.
+Built with modern technologies for performance and scalability:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={2}>
+  <Card title="Next.js 15" icon="react">
+    Full-stack React framework with App Router
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Supabase" icon="database">
+    PostgreSQL database with real-time capabilities
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="AI-Powered" icon="brain">
+    Gemini 2.5 Flash for natural language processing
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
+  <Card title="TypeScript" icon="code">
+    Type-safe development experience
   </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Quick Links
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={2}>
+  <Card title="Installation Guide" icon="download" href="/setup/installation">
+    Install dependencies and set up your environment
+  </Card>
+  <Card title="Architecture Overview" icon="diagram-project" href="/architecture">
+    Understand the system design
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/transactions">
+    Explore the REST API endpoints
+  </Card>
+  <Card title="Contributing" icon="users" href="/development/contributing">
+    Join the community and contribute
+  </Card>
+</CardGroup>

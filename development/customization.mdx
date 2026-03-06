@@ -1,0 +1,544 @@
+---
+title: 'Customization Guide'
+description: 'Customize categories, styling, AI behavior, and more'
+icon: 'palette'
+---
+
+## Overview
+
+Sistema Financiero is designed to be highly customizable. This guide covers common customizations without modifying core architecture.
+
+## Customizing Categories
+
+### Adding New Categories
+
+<Warning>
+  Categories are **hardcoded** in 4 different files. You must update all locations to maintain consistency.
+</Warning>
+
+<Steps>
+  <Step title="Location 1: AI Chat System Prompt">
+    File: `app/api/chat/stream/route.ts:23-31`
+
+    ```typescript
+    content: `Eres un asistente financiero personal. Registras gastos e ingresos de forma conversacional.
+
+    📋 CATEGORÍAS VÁLIDAS:
+    **Gastos:** Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Suscripciones, Otros Gastos
+    **Ingresos:** Salario, Ventas, Servicios, Inversiones, Freelance, Otros Ingresos
+
+    💳 MÉTODOS: Efectivo, Tarjeta, Transferencia, PayPal
+
+    Sé amigable y confirma con resumen detallado.`
+    ```
+  </Step>
+
+  <Step title="Location 2: AI Function Schema (Expenses)">
+    File: `app/api/chat/stream/route.ts:66-90`
+
+    ```typescript
+    {
+      type: 'function',
+      function: {
+        name: 'registrar_gasto',
+        description: 'Registra un gasto',
+        parameters: {
+          type: 'object',
+          properties: {
+            monto: { type: 'number' },
+            categoria: {
+              type: 'string',
+              enum: [
+                'Alimentación',
+                'Transporte',
+                'Vivienda',
+                'Salud',
+                'Entretenimiento',
+                'Educación',
+                'Suscripciones', // ← New category
+                'Otros Gastos'
+              ]
+            },
+            // ... rest of parameters
+          }
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Location 3: AI Function Schema (Income)">
+    File: `app/api/chat/stream/route.ts:92-119`
+
+    ```typescript
+    {
+      type: 'function',
+      function: {
+        name: 'registrar_ingreso',
+        description: 'Registra un ingreso',
+        parameters: {
+          type: 'object',
+          properties: {
+            monto: { type: 'number' },
+            categoria: {
+              type: 'string',
+              enum: [
+                'Salario',
+                'Ventas',
+                'Servicios',
+                'Inversiones',
+                'Freelance', // ← New category
+                'Otros Ingresos'
+              ]
+            },
+            // ... rest of parameters
+          }
+        }
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Location 4: OCR Analysis Prompt">
+    File: `app/api/upload-image/route.ts:63-66`
+
+    ```typescript
+    **CATEGORÍAS VÁLIDAS DEL SISTEMA:**
+    - Gastos: Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Suscripciones, Otros Gastos
+    - Ingresos: Salario, Ventas, Servicios, Inversiones, Freelance, Otros Ingresos
+    ```
+  </Step>
+</Steps>
+
+### Removing Categories
+
+Simply remove from all 4 locations above. Users won't be able to select them anymore.
+
+<Note>
+  **Existing transactions** with old categories will still display correctly. The database doesn't enforce category validation.
+</Note>
+
+### Adding Payment Methods
+
+<Steps>
+  <Step title="Update AI System Prompt">
+    File: `app/api/chat/stream/route.ts:29`
+
+    ```typescript
+    💳 MÉTODOS: Efectivo, Tarjeta, Transferencia, PayPal, Criptomonedas
+    ```
+  </Step>
+
+  <Step title="Update Function Schema">
+    File: `app/api/chat/stream/route.ts:78-82` and `102-106`
+
+    ```typescript
+    metodo_pago: {
+      type: 'string',
+      enum: ['Efectivo', 'Tarjeta', 'Transferencia', 'PayPal', 'Criptomonedas'],
+      default: 'Efectivo'
+    }
+    ```
+  </Step>
+
+  <Step title="Update Database Constraint">
+    Optional: Add CHECK constraint in Supabase:
+
+    ```sql
+    ALTER TABLE transacciones
+    DROP CONSTRAINT IF EXISTS transacciones_metodo_pago_check;
+
+    ALTER TABLE transacciones
+    ADD CONSTRAINT transacciones_metodo_pago_check
+    CHECK (metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia', 'PayPal', 'Criptomonedas'));
+    ```
+  </Step>
+</Steps>
+
+## Customizing AI Behavior
+
+### Changing AI Model
+
+File: `app/api/chat/stream/route.ts:54`
+
+```typescript
+const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  body: JSON.stringify({
+    model: 'anthropic/claude-3.5-sonnet', // ← Change here
+    messages: openRouterMessages,
+    max_tokens: 2000,
+    temperature: 0.7,
+    stream: true,
+  })
+})
+```
+
+**Recommended Models:**
+
+| Model | Speed | Cost | Best For |
+|-------|-------|------|----------|
+| `google/gemini-2.5-flash` | ⚡ Fastest | 💰 Cheapest | Default (current) |
+| `anthropic/claude-3.5-sonnet` | 🐢 Slow | 💸 Expensive | Best accuracy |
+| `openai/gpt-4o` | ⚡ Fast | 💵 Medium | Balanced |
+| `meta-llama/llama-3.1-70b-instruct` | ⚡ Fast | 💰 Cheap | Open source |
+
+### Adjusting AI Temperature
+
+File: `app/api/chat/stream/route.ts:57`
+
+```typescript
+temperature: 0.7, // ← Change between 0.0 (precise) and 1.0 (creative)
+```
+
+- **0.0-0.3**: Very precise, deterministic responses
+- **0.4-0.7**: Balanced (default)
+- **0.8-1.0**: More creative, varied responses
+
+### Customizing System Prompt
+
+File: `app/api/chat/stream/route.ts:23-31`
+
+```typescript
+content: `Eres un asistente financiero EXTREMADAMENTE detallista.
+
+Siempre pides confirmación antes de registrar cualquier transacción.
+
+Cuando el usuario diga "gasté X en Y":
+1. Extrae el monto y categoría
+2. Pregunta el método de pago
+3. Pregunta si quiere agregar descripción
+4. SOLO entonces registra
+
+📋 CATEGORÍAS VÁLIDAS:
+**Gastos:** Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Otros Gastos
+**Ingresos:** Salario, Ventas, Servicios, Inversiones, Otros Ingresos
+
+💳 MÉTODOS: Efectivo, Tarjeta, Transferencia
+
+Sé profesional y detallado.`
+```
+
+### Enabling Thinking Mode
+
+File: `app/api/chat/stream/route.ts:60-62`
+
+```typescript
+thinking_config: {
+  max_thinking_tokens: 500, // Increase for deeper reasoning
+}
+```
+
+<Note>
+  Only supported by `google/gemini-2.5-flash` and newer models. Costs extra tokens.
+</Note>
+
+## Customizing UI/Styling
+
+### Changing Theme Colors
+
+File: `tailwind.config.js`
+
+```javascript
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#10b981', // emerald-500 → Change to your brand color
+        secondary: '#06b6d4', // cyan-500
+        danger: '#ef4444', // red-500
+        success: '#22c55e', // green-500
+      }
+    }
+  }
+}
+```
+
+Then replace Tailwind classes:
+
+```typescript
+// Before
+className="bg-emerald-500 text-white"
+
+// After
+className="bg-primary text-white"
+```
+
+### Changing Date Format
+
+File: `components/DataViews.tsx:456-461`
+
+```typescript
+{new Date(tx.fecha).toLocaleString('es-MX', {
+  day: '2-digit',
+  month: 'short', // ← Change to 'long' or 'numeric'
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})}
+```
+
+**Format Options:**
+- `'es-MX'` → Spanish Mexico
+- `'en-US'` → English US
+- `'pt-BR'` → Portuguese Brazil
+
+### Customizing Currency Display
+
+File: `components/DataViews.tsx:489`
+
+```typescript
+${tx.monto.toLocaleString('es-MX', {
+  minimumFractionDigits: 2,
+  style: 'currency', // ← Add this
+  currency: 'MXN' // ← Add this (MXN, USD, EUR, etc.)
+})}
+```
+
+**Result:** `$450.50` → `MXN 450.50` or `$450.50 MXN`
+
+### Changing Items Per Page
+
+File: `components/DataViews.tsx:40`
+
+```typescript
+const [itemsPorPagina, setItemsPorPagina] = useState(50) // ← Change default
+```
+
+## Customizing Dashboard KPIs
+
+### Adding New KPI Card
+
+File: `app/page.tsx` (add after existing KPI cards)
+
+```typescript
+// Calculate average transaction amount
+const avgTransaccion = transacciones.length > 0
+  ? kpis.totalTransacciones > 0
+    ? (kpis.totalIngresos + kpis.totalGastos) / kpis.totalTransacciones
+    : 0
+  : 0
+
+// Add to JSX
+<div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-xl border-2 border-purple-200 dark:border-purple-800">
+  <div className="text-sm text-purple-700 dark:text-purple-300 mb-1">
+    Promedio por Transacción
+  </div>
+  <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+    ${avgTransaccion.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+  </div>
+</div>
+```
+
+### Customizing Date Range Filters
+
+File: `app/api/transacciones/route.ts:28-43`
+
+```typescript
+if (vista === 'diaria') {
+  // Change from 7 days to 30 days
+  const thirtyDaysAgo = new Date(now)
+  thirtyDaysAgo.setDate(now.getDate() - 30) // ← Changed
+  query = query.gte('fecha', thirtyDaysAgo.toISOString())
+} else if (vista === 'semanal') {
+  // Change from 4 weeks to 8 weeks
+  const eightWeeksAgo = new Date(now)
+  eightWeeksAgo.setDate(now.getDate() - 56) // ← Changed
+  query = query.gte('fecha', eightWeeksAgo.toISOString())
+} else {
+  // Change from 12 months to 24 months
+  const twentyFourMonthsAgo = new Date(now)
+  twentyFourMonthsAgo.setMonth(now.getMonth() - 24) // ← Changed
+  query = query.gte('fecha', twentyFourMonthsAgo.toISOString())
+}
+```
+
+## Customizing OCR Behavior
+
+### Adjusting OCR Prompt
+
+File: `app/api/upload-image/route.ts:56-114`
+
+```typescript
+text: `Analiza esta imagen y determina si es un ticket/factura válido.
+
+**PASO 1: VALIDAR SI ES UN TICKET**
+- ¿La imagen muestra un ticket, factura, recibo o comprobante de compra?
+- ¿Tiene información de comercio, monto, items comprados?
+- Si es screenshot de chat, foto aleatoria, o documento que NO sea ticket → marca "es_ticket": false
+
+**INSTRUCCIONES ADICIONALES:**
+- Si el ticket está en inglés, traduce las categorías al español
+- Si no puedes leer el monto claramente, marca "monto": null
+- Si el ticket tiene múltiples totales, usa el "Total Final" o "Total a Pagar"
+
+// ... rest of prompt
+`
+```
+
+### Changing OCR Model
+
+File: `app/api/upload-image/route.ts:49`
+
+```typescript
+model: 'anthropic/claude-3.5-sonnet', // ← Better for complex receipts
+// Or:
+model: 'openai/gpt-4o', // ← Good balance
+```
+
+<Note>
+  `gemini-2.5-flash` (default) is fastest and cheapest but may struggle with handwritten receipts.
+</Note>
+
+## Customizing Chat Interface
+
+### Changing Thinking Indicator Text
+
+File: `app/agente-mejorado/page.tsx` (search for `isThinking`)
+
+```typescript
+{msg.isThinking && (
+  <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600" />
+    <span>Analizando tu solicitud...</span> {/* ← Change text */}
+  </div>
+)}
+```
+
+### Adding Chat Message Timestamps
+
+File: `app/agente-mejorado/page.tsx` (add to message rendering)
+
+```typescript
+<div className="flex justify-between items-start">
+  <div className="flex-1">
+    {msg.content}
+  </div>
+  <span className="text-xs text-gray-400 ml-2">
+    {new Date().toLocaleTimeString('es-MX', {
+      hour: '2-digit',
+      minute: '2-digit'
+    })}
+  </span>
+</div>
+```
+
+## Environment Variables
+
+### Adding Custom Configuration
+
+File: `.env.local`
+
+```bash
+# Existing variables
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1...
+OPENROUTER_API_KEY=sk-or-v1-...
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Custom variables
+NEXT_PUBLIC_DEFAULT_CURRENCY=MXN
+NEXT_PUBLIC_DATE_FORMAT=es-MX
+NEXT_PUBLIC_MAX_TRANSACTIONS_PER_PAGE=50
+NEXT_PUBLIC_ENABLE_BUDGET_ALERTS=true
+```
+
+### Using Custom Variables
+
+```typescript
+// File: components/DataViews.tsx
+const defaultItemsPerPage = Number(
+  process.env.NEXT_PUBLIC_MAX_TRANSACTIONS_PER_PAGE || 20
+)
+
+const [itemsPorPagina, setItemsPorPagina] = useState(defaultItemsPerPage)
+```
+
+## Advanced Customizations
+
+### Adding Custom Validation Rules
+
+File: `app/api/chat/stream/route.ts:208-217`
+
+```typescript
+const { error } = await supabase.from('transacciones').insert({
+  tipo,
+  monto: functionArgs.monto,
+  categoria: functionArgs.categoria,
+  // ... other fields
+})
+
+// Add custom validation
+if (!error) {
+  // Send notification if amount > 1000
+  if (functionArgs.monto > 1000) {
+    await fetch('/api/notifications/send', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: `Gran transacción registrada: $${functionArgs.monto}`,
+        tipo: 'alerta'
+      })
+    })
+  }
+}
+```
+
+### Adding Category Icons
+
+Create a mapping object:
+
+```typescript
+// File: lib/categoryIcons.ts
+export const CATEGORY_ICONS: Record<string, string> = {
+  'Alimentación': '🍔',
+  'Transporte': '🚗',
+  'Vivienda': '🏠',
+  'Salud': '💊',
+  'Entretenimiento': '🎮',
+  'Educación': '📚',
+  'Otros Gastos': '📦',
+  'Salario': '💼',
+  'Ventas': '💰',
+  'Servicios': '🔧',
+  'Inversiones': '📈',
+  'Otros Ingresos': '💵',
+}
+
+// Use in component
+import { CATEGORY_ICONS } from '@/lib/categoryIcons'
+
+<span>{CATEGORY_ICONS[tx.categoria]} {tx.categoria}</span>
+```
+
+## Testing Customizations
+
+<Steps>
+  <Step title="Clear Cache">
+    ```bash
+    rm -rf .next
+    npm run dev
+    ```
+  </Step>
+
+  <Step title="Test in Incognito">
+    Open browser in incognito mode to avoid cached state
+  </Step>
+
+  <Step title="Check Console">
+    Open DevTools → Console for errors
+  </Step>
+
+  <Step title="Test Database">
+    Verify changes in Supabase Dashboard → Table Editor
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="database" href="/development/database-schema">
+    Understand the database structure
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/development/troubleshooting">
+    Fix common customization issues
+  </Card>
+</CardGroup>

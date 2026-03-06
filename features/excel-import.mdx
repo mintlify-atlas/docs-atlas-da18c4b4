@@ -1,0 +1,249 @@
+---
+title: 'Excel/CSV Import'
+description: 'Bulk import transactions from Excel or CSV files'
+icon: 'file-excel'
+---
+
+Import multiple transactions at once using Excel or CSV files. This feature is perfect for migrating historical data, bulk data entry, or importing transactions from other systems.
+
+## Quick Start
+
+<Steps>
+  <Step title="Download the template">
+    Navigate to **Upload Excel** and download the CSV template to see the correct format.
+  </Step>
+  <Step title="Fill in your data">
+    Add your transactions to the CSV file following the format requirements.
+  </Step>
+  <Step title="Upload the file">
+    Select your CSV file and click "Subir y Registrar Transacciones".
+  </Step>
+  <Step title="Review results">
+    Check the import summary and any errors or warnings.
+  </Step>
+</Steps>
+
+## CSV Format Requirements
+
+### Required Columns
+
+Your CSV file must include these columns:
+
+<ParamField path="fecha" type="string" required>
+  Transaction date in `YYYY-MM-DD` format (e.g., `2025-10-06`)
+</ParamField>
+
+<ParamField path="tipo" type="string" required>
+  Transaction type: either `gasto` (expense) or `ingreso` (income)
+</ParamField>
+
+<ParamField path="categoria" type="string" required>
+  Category name (must match system categories exactly, including accents)
+  
+  **Valid expense categories:** Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Suscripciones, Otros Gastos
+  
+  **Valid income categories:** Salario, Ventas, Servicios, Inversiones, Tours, Comedor, Reservaciones, Anticipos, Otros Ingresos
+</ParamField>
+
+<ParamField path="monto" type="number" required>
+  Transaction amount (use decimal point, e.g., `1200.50`)
+</ParamField>
+
+### Optional Columns
+
+<ParamField path="descripcion" type="string">
+  Additional description or notes about the transaction
+</ParamField>
+
+<ParamField path="num_pax" type="number">
+  Number of passengers (useful for tour businesses)
+</ParamField>
+
+<ParamField path="metodo_pago" type="string">
+  Payment method: `Efectivo`, `Tarjeta`, or `Transferencia` (defaults to `Efectivo` if not provided)
+</ParamField>
+
+<ParamField path="registrado_por" type="string">
+  Name of the person who made/recorded the transaction
+</ParamField>
+
+## Example CSV File
+
+```csv
+fecha,tipo,categoria,monto,descripcion,num_pax,metodo_pago,registrado_por
+2025-10-06,ingreso,Tours,1200,Tour grupal matutino,15,Efectivo,Armando
+2025-10-06,ingreso,Comedor,850,Comidas del día,8,Tarjeta,Esposa
+2025-10-06,gasto,Transporte,500,Llenado de camioneta,,Efectivo,Hijo 1
+2025-10-06,gasto,Alimentación,1200,Compras del mercado,,Efectivo,Armando
+2025-10-07,ingreso,Servicios,3500,Consultoría empresarial,,Transferencia,Armando
+2025-10-07,gasto,Salud,450,Medicamentos farmacia,,Tarjeta,Esposa
+```
+
+<Note>
+Notice that some optional fields (like `num_pax` for non-tour transactions) can be left empty.
+</Note>
+
+## Import Process
+
+### Step-by-Step Upload
+
+<Accordion title="1. Prepare Your CSV File">
+  - Use Excel, Google Sheets, or any spreadsheet program
+  - Save as CSV format (comma-separated values)
+  - Ensure column headers match exactly: `fecha,tipo,categoria,monto,descripcion,num_pax,metodo_pago,registrado_por`
+  - Use proper date format: `YYYY-MM-DD`
+  - Include accents in category names (Alimentación, not Alimentacion)
+</Accordion>
+
+<Accordion title="2. Validate Your Data">
+  Before uploading, verify:
+  - All dates are in correct format
+  - `tipo` column only contains `gasto` or `ingreso`
+  - Category names match system categories exactly
+  - Amounts are positive numbers
+  - No special characters in numeric fields
+</Accordion>
+
+<Accordion title="3. Upload and Review">
+  1. Navigate to **Upload Excel** page
+  2. Click the upload area or drag and drop your CSV file
+  3. Review the file details shown
+  4. Click "Subir y Registrar Transacciones"
+  5. Wait for processing to complete
+</Accordion>
+
+<Accordion title="4. Check Results">
+  After upload:
+  - View the number of successfully imported transactions
+  - Review any errors or warnings
+  - Check that amounts match your expectations
+  - Verify transactions appear in the dashboard
+</Accordion>
+
+## Error Handling
+
+### Common Errors
+
+<Warning>
+**Missing Required Headers**
+
+If your CSV is missing required columns (fecha, tipo, categoria, or monto), the import will fail.
+
+**Solution:** Add the missing columns to your CSV file.
+</Warning>
+
+<Warning>
+**Invalid Date Format**
+
+Dates must be in `YYYY-MM-DD` format. Formats like `10/06/2025` or `06-Oct-2025` will cause errors.
+
+**Solution:** Convert dates to `YYYY-MM-DD` format.
+</Warning>
+
+<Warning>
+**Invalid Transaction Type**
+
+The `tipo` column must contain exactly `gasto` or `ingreso` (lowercase).
+
+**Solution:** Replace values like "Expense", "Income", "GASTO" with proper values.
+</Warning>
+
+<Warning>
+**Category Not Found**
+
+Category names must match system categories exactly, including accents.
+
+**Solution:** Check spelling and accents. Use "Alimentación" not "Alimentacion".
+</Warning>
+
+### Partial Imports
+
+If some rows have errors:
+
+- Valid rows will be imported successfully
+- Invalid rows will be skipped
+- The import summary shows which rows failed and why
+- You can fix the errors and re-import the failed rows
+
+<Tip>
+Download the template file first to ensure you have the correct format and see example data.
+</Tip>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test with Small Files" icon="vial">
+    Import a few test transactions first to verify the format is correct before importing hundreds of rows.
+  </Card>
+  <Card title="Use the Template" icon="file-lines">
+    Always start with the downloaded template to avoid format issues.
+  </Card>
+  <Card title="Backup First" icon="download">
+    Export your existing data before importing large batches, just in case.
+  </Card>
+  <Card title="Validate Data" icon="check-double">
+    Check your spreadsheet for errors before saving as CSV and uploading.
+  </Card>
+</CardGroup>
+
+## Advanced Tips
+
+### Handling Large Files
+
+For files with thousands of transactions:
+
+1. Split into smaller batches (500-1000 rows each)
+2. Import one batch at a time
+3. Verify each batch before proceeding
+4. This helps identify errors faster and reduces memory usage
+
+### Excel Formatting Notes
+
+<Note>
+- **Dates**: Excel may auto-format dates. Set the column format to "Text" before entering dates to prevent conversion.
+- **Numbers**: Use plain numbers without currency symbols (use `1200` not `$1,200`)
+- **Decimals**: Use dots for decimals (use `1200.50` not `1200,50`)
+- **Save as CSV**: Use "Save As" → "CSV (Comma delimited)" in Excel
+</Note>
+
+### Migrating Historical Data
+
+When importing historical transactions:
+
+1. Sort by date (oldest first) to maintain chronological order
+2. Include the `registrado_por` field to track data sources
+3. Use descriptive text in the `descripcion` field
+4. Double-check category assignments for consistency
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="File not uploading">
+    - Verify the file extension is `.csv` (not `.xlsx` or `.xls`)
+    - Check file size (very large files may timeout)
+    - Try saving the file with UTF-8 encoding
+  </Accordion>
+  
+  <Accordion title="Special characters not showing correctly">
+    - Save your CSV with UTF-8 encoding
+    - In Excel: Save As → CSV UTF-8 (Comma delimited)
+    - Verify accents appear correctly: Alimentación, Inversión
+  </Accordion>
+  
+  <Accordion title="All transactions importing as 'Otros Gastos'">
+    - Check that category names match exactly (including case and accents)
+    - Verify there are no extra spaces before or after category names
+    - Use categories from the official list only
+  </Accordion>
+  
+  <Accordion title="Numbers not recognized">
+    - Remove currency symbols ($, MXN, etc.)
+    - Remove thousands separators (commas)
+    - Use dot (.) for decimal separator, not comma (,)
+    - Example: use `1200.50` not `$1,200.50`
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+After a successful import, visit the **Dashboard** or **Data Views** to verify that your transactions appear correctly with the right categories, amounts, and dates.
+</Tip>

@@ -1,0 +1,723 @@
+---
+title: 'Deployment'
+description: 'Deploy Sistema Financiero to production'
+icon: 'rocket'
+---
+
+## Overview
+
+Sistema Financiero is a Next.js application that can be deployed to any platform supporting Node.js 20+. This guide covers the most popular deployment platforms.
+
+<Note>
+  All deployment methods require a configured Supabase project. Complete [Supabase Configuration](/setup/supabase-configuration) first.
+</Note>
+
+## Deployment Platforms Comparison
+
+| Platform | Free Tier | Build Time | Edge Network | Best For |
+|----------|-----------|------------|--------------|----------|
+| **Vercel** | ✅ Hobby (generous) | ~2 min | ✅ Global CDN | Next.js apps (recommended) |
+| **Railway** | ❌ $5/month | ~3 min | ✅ Global | Full-stack with DB |
+| **Netlify** | ✅ Starter | ~2 min | ✅ Global CDN | Static + serverless |
+| **Render** | ✅ Free tier | ~5 min | ❌ Single region | Simple deployments |
+| **Cloudflare Pages** | ✅ Free (unlimited) | ~2 min | ✅ 300+ locations | Edge-first apps |
+| **Self-Hosted** | ✅ (your server) | ~2 min | ❌ | Full control |
+
+<Tip>
+  **Recommended:** Vercel is built by the creators of Next.js and offers the best developer experience with zero configuration.
+</Tip>
+
+## Deploy to Vercel (Recommended)
+
+### Prerequisites
+
+- GitHub, GitLab, or Bitbucket account
+- Code pushed to a repository
+- Supabase project configured
+
+### Deployment Steps
+
+<Steps>
+  <Step title="Push Code to GitHub">
+    If you haven't already:
+
+    ```bash Terminal
+    git init
+    git add .
+    git commit -m "Initial commit"
+    git remote add origin https://github.com/yourusername/sistema-financiero.git
+    git push -u origin main
+    ```
+  </Step>
+
+  <Step title="Import Project to Vercel">
+    1. Go to [vercel.com](https://vercel.com/) and sign in with GitHub
+    2. Click **Add New** → **Project**
+    3. Select your `sistema-financiero` repository
+    4. Click **Import**
+
+    <Note>
+      Vercel auto-detects Next.js and configures build settings.
+    </Note>
+  </Step>
+
+  <Step title="Configure Environment Variables">
+    Before deploying, add environment variables:
+
+    1. In the **Configure Project** screen, expand **Environment Variables**
+    2. Add each variable:
+
+    | Key | Value | Environment |
+    |-----|-------|-------------|
+    | `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase URL | Production, Preview, Development |
+    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key | Production, Preview, Development |
+    | `OPENROUTER_API_KEY` | Your OpenRouter key (optional) | Production, Preview, Development |
+    | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` | Production |
+
+    <Warning>
+      For `NEXT_PUBLIC_APP_URL`, use a placeholder first (like `https://sistema-financiero.vercel.app`), then update it after deployment with your actual Vercel URL.
+    </Warning>
+  </Step>
+
+  <Step title="Deploy">
+    Click **Deploy** and wait ~2 minutes.
+
+    You'll see build logs streaming. Once complete, you'll get a deployment URL like:
+    ```
+    https://sistema-financiero-abc123.vercel.app
+    ```
+  </Step>
+
+  <Step title="Update App URL">
+    After first deployment:
+
+    1. Go to **Settings** → **Environment Variables**
+    2. Find `NEXT_PUBLIC_APP_URL`
+    3. Update to your actual Vercel URL
+    4. Redeploy:
+       ```bash Terminal
+       git commit --allow-empty -m "Update app URL"
+       git push
+       ```
+  </Step>
+</Steps>
+
+### Custom Domain (Optional)
+
+<Steps>
+  <Step title="Add Domain in Vercel">
+    1. Go to your project **Settings** → **Domains**
+    2. Enter your domain (e.g., `finanzas.tuempresa.com`)
+    3. Click **Add**
+  </Step>
+
+  <Step title="Configure DNS">
+    Vercel will show DNS records to add:
+
+    **For root domains (example.com):**
+    ```dns
+    A Record:
+    Name: @
+    Value: 76.76.21.21
+    ```
+
+    **For subdomains (app.example.com):**
+    ```dns
+    CNAME Record:
+    Name: app
+    Value: cname.vercel-dns.com
+    ```
+
+    Add these records in your domain registrar (GoDaddy, Namecheap, Cloudflare, etc.)
+  </Step>
+
+  <Step title="Wait for Verification">
+    DNS propagation takes 5-60 minutes. Vercel will automatically issue an SSL certificate once verified.
+  </Step>
+</Steps>
+
+### Continuous Deployment
+
+Vercel automatically deploys on every `git push`:
+
+- **Production:** Commits to `main` branch → `your-app.vercel.app`
+- **Preview:** Commits to other branches → `your-app-git-branch.vercel.app`
+- **Pull Requests:** Each PR gets a unique preview URL
+
+<Tip>
+  Preview deployments let you test changes before merging to production. Share the URL with team members for review.
+</Tip>
+
+## Deploy to Railway
+
+### Deployment Steps
+
+<Steps>
+  <Step title="Create Railway Account">
+    1. Go to [railway.app](https://railway.app/)
+    2. Sign up with GitHub
+    3. Verify your email
+  </Step>
+
+  <Step title="Create New Project">
+    1. Click **New Project**
+    2. Select **Deploy from GitHub repo**
+    3. Choose your `sistema-financiero` repository
+    4. Click **Deploy Now**
+  </Step>
+
+  <Step title="Add Environment Variables">
+    1. Click on your service
+    2. Go to **Variables** tab
+    3. Click **New Variable** for each:
+       ```bash
+       NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+       NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+       OPENROUTER_API_KEY=sk-or-v1-...
+       NEXT_PUBLIC_APP_URL=https://your-app.up.railway.app
+       ```
+  </Step>
+
+  <Step title="Configure Build Settings">
+    Railway auto-detects Next.js. If needed, manually set:
+
+    - **Build Command:** `npm run build`
+    - **Start Command:** `npm run start`
+    - **Port:** `3000` (auto-detected)
+  </Step>
+
+  <Step title="Deploy">
+    Railway automatically deploys. Check the **Deployments** tab for progress.
+
+    Once complete, click **View Deployment** to see your live app.
+  </Step>
+</Steps>
+
+### Custom Domain on Railway
+
+1. Go to **Settings** → **Networking**
+2. Click **Custom Domain**
+3. Enter your domain and follow DNS instructions
+4. Add the provided CNAME record to your DNS
+
+<Note>
+  Railway provides automatic SSL certificates for custom domains.
+</Note>
+
+## Deploy to Netlify
+
+### Deployment Steps
+
+<Steps>
+  <Step title="Create Netlify Account">
+    1. Go to [netlify.com](https://netlify.com/)
+    2. Sign up with GitHub
+  </Step>
+
+  <Step title="Import Project">
+    1. Click **Add new site** → **Import an existing project**
+    2. Select **GitHub**
+    3. Authorize Netlify
+    4. Choose your repository
+  </Step>
+
+  <Step title="Configure Build Settings">
+    Netlify should auto-detect these settings:
+
+    - **Build command:** `npm run build`
+    - **Publish directory:** `.next`
+    - **Functions directory:** `.netlify/functions` (auto-created)
+
+    <Warning>
+      Netlify requires the **Next.js Runtime** plugin. It's usually auto-installed, but if builds fail, add it manually in **Site Settings** → **Build & deploy** → **Build plugins**.
+    </Warning>
+  </Step>
+
+  <Step title="Add Environment Variables">
+    1. Go to **Site settings** → **Build & deploy** → **Environment**
+    2. Click **Edit variables**
+    3. Add each variable:
+       ```bash
+       NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+       NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+       OPENROUTER_API_KEY=sk-or-v1-...
+       NEXT_PUBLIC_APP_URL=https://your-app.netlify.app
+       ```
+  </Step>
+
+  <Step title="Deploy">
+    Click **Deploy site**. Initial build takes ~3 minutes.
+
+    Once complete, you'll get a URL like `https://sistema-financiero.netlify.app`.
+  </Step>
+</Steps>
+
+## Deploy to Render
+
+<Steps>
+  <Step title="Create Render Account">
+    Sign up at [render.com](https://render.com/) with GitHub.
+  </Step>
+
+  <Step title="Create Web Service">
+    1. Click **New** → **Web Service**
+    2. Connect your GitHub repository
+    3. Configure:
+       - **Name:** `sistema-financiero`
+       - **Environment:** `Node`
+       - **Build Command:** `npm install && npm run build`
+       - **Start Command:** `npm run start`
+  </Step>
+
+  <Step title="Add Environment Variables">
+    In the **Environment** section, add:
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+    OPENROUTER_API_KEY=sk-or-v1-...
+    NEXT_PUBLIC_APP_URL=https://sistema-financiero.onrender.com
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    Click **Create Web Service**. First deployment takes ~5 minutes.
+
+    <Note>
+      Render's free tier may spin down after inactivity. First request after idle takes 30-60 seconds to wake up.
+    </Note>
+  </Step>
+</Steps>
+
+## Deploy to Cloudflare Pages
+
+<Steps>
+  <Step title="Install Wrangler CLI">
+    ```bash Terminal
+    npm install -g wrangler
+    wrangler login
+    ```
+  </Step>
+
+  <Step title="Configure for Cloudflare Pages">
+    Cloudflare Pages requires adapter configuration. Add to `package.json`:
+
+    ```json package.json
+    {
+      "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "pages:build": "npx @cloudflare/next-on-pages",
+        "pages:dev": "npx @cloudflare/next-on-pages --watch"
+      }
+    }
+    ```
+
+    Install adapter:
+    ```bash Terminal
+    npm install --save-dev @cloudflare/next-on-pages
+    ```
+  </Step>
+
+  <Step title="Deploy">
+    ```bash Terminal
+    npm run pages:build
+    npx wrangler pages deploy .vercel/output/static
+    ```
+  </Step>
+
+  <Step title="Add Environment Variables">
+    In Cloudflare dashboard:
+    1. Go to **Workers & Pages** → Your project
+    2. **Settings** → **Environment Variables**
+    3. Add each variable for Production and Preview
+  </Step>
+</Steps>
+
+<Warning>
+  Cloudflare Pages has limitations with Next.js API routes. Some features (like streaming AI responses) may not work. Vercel or Railway are better choices for full functionality.
+</Warning>
+
+## Self-Hosted Deployment
+
+### Using Docker
+
+<Steps>
+  <Step title="Create Dockerfile">
+    Create `Dockerfile` in project root:
+
+    ```dockerfile Dockerfile
+    FROM node:20-alpine AS base
+
+    # Install dependencies
+    FROM base AS deps
+    RUN apk add --no-cache libc6-compat
+    WORKDIR /app
+
+    COPY package*.json ./
+    RUN npm ci
+
+    # Build application
+    FROM base AS builder
+    WORKDIR /app
+    COPY --from=deps /app/node_modules ./node_modules
+    COPY . .
+
+    # Set build-time env vars
+    ARG NEXT_PUBLIC_SUPABASE_URL
+    ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ARG NEXT_PUBLIC_APP_URL
+    ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+    ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+
+    RUN npm run build
+
+    # Production image
+    FROM base AS runner
+    WORKDIR /app
+
+    ENV NODE_ENV=production
+
+    RUN addgroup --system --gid 1001 nodejs
+    RUN adduser --system --uid 1001 nextjs
+
+    COPY --from=builder /app/public ./public
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+    COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+    USER nextjs
+
+    EXPOSE 3000
+
+    ENV PORT=3000
+    ENV HOSTNAME="0.0.0.0"
+
+    CMD ["node", "server.js"]
+    ```
+  </Step>
+
+  <Step title="Update next.config.ts">
+    Enable standalone output:
+
+    ```typescript next.config.ts
+    import type { NextConfig } from 'next'
+
+    const nextConfig: NextConfig = {
+      output: 'standalone',
+    }
+
+    export default nextConfig
+    ```
+  </Step>
+
+  <Step title="Build Image">
+    ```bash Terminal
+    docker build \
+      --build-arg NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+      --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc... \
+      --build-arg NEXT_PUBLIC_APP_URL=https://your-domain.com \
+      -t sistema-financiero .
+    ```
+  </Step>
+
+  <Step title="Run Container">
+    ```bash Terminal
+    docker run -d \
+      -p 3000:3000 \
+      -e OPENROUTER_API_KEY=sk-or-v1-... \
+      --name sistema-financiero \
+      sistema-financiero
+    ```
+
+    Access at `http://localhost:3000`
+  </Step>
+</Steps>
+
+### Using PM2 (Node.js Process Manager)
+
+<Steps>
+  <Step title="Install PM2">
+    ```bash Terminal
+    npm install -g pm2
+    ```
+  </Step>
+
+  <Step title="Build Application">
+    ```bash Terminal
+    npm run build
+    ```
+  </Step>
+
+  <Step title="Create PM2 Config">
+    Create `ecosystem.config.js`:
+
+    ```javascript ecosystem.config.js
+    module.exports = {
+      apps: [{
+        name: 'sistema-financiero',
+        script: 'node_modules/next/dist/bin/next',
+        args: 'start',
+        env: {
+          NODE_ENV: 'production',
+          PORT: 3000,
+          NEXT_PUBLIC_SUPABASE_URL: 'https://your-project.supabase.co',
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: 'eyJhbGc...',
+          OPENROUTER_API_KEY: 'sk-or-v1-...',
+          NEXT_PUBLIC_APP_URL: 'https://your-domain.com',
+        },
+        instances: 'max',
+        exec_mode: 'cluster',
+        watch: false,
+        max_memory_restart: '500M',
+      }]
+    }
+    ```
+  </Step>
+
+  <Step title="Start with PM2">
+    ```bash Terminal
+    pm2 start ecosystem.config.js
+    pm2 save
+    pm2 startup
+    ```
+
+    <Tip>
+      PM2 will auto-restart your app on crashes and reboot.
+    </Tip>
+  </Step>
+</Steps>
+
+### Nginx Reverse Proxy
+
+If running on a VPS, use Nginx as a reverse proxy:
+
+```nginx /etc/nginx/sites-available/sistema-financiero
+server {
+    listen 80;
+    server_name finanzas.tuempresa.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+Enable SSL with Let's Encrypt:
+```bash Terminal
+sudo certbot --nginx -d finanzas.tuempresa.com
+```
+
+## Post-Deployment Checklist
+
+<Steps>
+  <Step title="Verify Application Loads">
+    Visit your deployment URL and check:
+    - ✅ Dashboard loads without errors
+    - ✅ No console errors in browser DevTools (F12)
+    - ✅ Favicon and images load
+  </Step>
+
+  <Step title="Test Database Connection">
+    1. Try adding a transaction via the manual form
+    2. Check if it appears in the dashboard
+    3. Verify data is saved in Supabase Table Editor
+  </Step>
+
+  <Step title="Test AI Features (if enabled)">
+    1. Go to the AI chat page (`/agente-mejorado`)
+    2. Send a test message: "Gasté $100 en gasolina"
+    3. Verify the transaction is registered
+  </Step>
+
+  <Step title="Check Performance">
+    Run [PageSpeed Insights](https://pagespeed.web.dev/):
+    ```
+    https://pagespeed.web.dev/analysis?url=https://your-app.vercel.app
+    ```
+
+    Target scores:
+    - Performance: 90+
+    - Accessibility: 95+
+    - Best Practices: 95+
+    - SEO: 90+
+  </Step>
+
+  <Step title="Set Up Monitoring (Optional)">
+    Add error tracking with [Sentry](https://sentry.io/):
+
+    ```bash Terminal
+    npm install @sentry/nextjs
+    npx @sentry/wizard@latest -i nextjs
+    ```
+
+    Or use Vercel Analytics (free for Vercel deployments):
+    ```bash Terminal
+    npm install @vercel/analytics
+    ```
+
+    ```typescript app/layout.tsx
+    import { Analytics } from '@vercel/analytics/react'
+
+    export default function RootLayout({ children }) {
+      return (
+        <html>
+          <body>
+            {children}
+            <Analytics />
+          </body>
+        </html>
+      )
+    }
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting Deployment Issues
+
+<AccordionGroup>
+  <Accordion title="Build fails with 'Module not found'">
+    **Problem:** Missing dependencies or incorrect imports.
+    
+    **Solution:**
+    ```bash
+    # Clear cache and reinstall
+    rm -rf node_modules .next package-lock.json
+    npm install
+    npm run build
+    ```
+
+    Check import paths are correct:
+    ```typescript
+    // ✅ Correct (using tsconfig path alias)
+    import { supabase } from '@/lib/supabase'
+    
+    // ❌ Wrong (relative path may break)
+    import { supabase } from '../../../lib/supabase'
+    ```
+  </Accordion>
+
+  <Accordion title="Application crashes on startup">
+    **Problem:** Missing environment variables or runtime errors.
+    
+    **Solution:**
+    1. Check deployment logs for error messages
+    2. Verify all required env vars are set in platform UI
+    3. Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are present
+    4. Test locally with production env:
+       ```bash
+       NODE_ENV=production npm run build && npm run start
+       ```
+  </Accordion>
+
+  <Accordion title="API routes return 500 errors">
+    **Problem:** Server-side errors in API routes.
+    
+    **Solution:**
+    1. Check server logs (Vercel: Deployment logs, Railway: Service logs)
+    2. Common issues:
+       - Missing `OPENROUTER_API_KEY` (if using AI features)
+       - Supabase connection fails (check URL/key)
+       - CORS issues (check API route headers)
+    3. Add error logging:
+       ```typescript
+       export async function POST(request: Request) {
+         try {
+           // Your code
+         } catch (error) {
+           console.error('API Error:', error)
+           return NextResponse.json(
+             { error: String(error) },
+             { status: 500 }
+           )
+         }
+       }
+       ```
+  </Accordion>
+
+  <Accordion title="Slow cold start times">
+    **Problem:** First request after idle takes 10+ seconds.
+    
+    **Solution:**
+    - **Vercel:** Upgrade to Pro plan for always-warm instances
+    - **Railway:** No cold starts (paid plans keep services running)
+    - **Render:** Free tier spins down after 15min idle (upgrade to keep alive)
+    - **Self-hosted:** No cold starts
+  </Accordion>
+
+  <Accordion title="Database queries are slow">
+    **Problem:** Dashboard takes 5+ seconds to load.
+    
+    **Solution:**
+    1. Check Supabase region matches deployment region
+    2. Verify indexes exist (see [Supabase Configuration](/setup/supabase-configuration))
+    3. Add query optimization:
+       ```typescript
+       // ❌ Slow (fetches all fields)
+       const { data } = await supabase.from('transacciones').select('*')
+       
+       // ✅ Fast (only needed fields)
+       const { data } = await supabase
+         .from('transacciones')
+         .select('fecha, tipo, monto, categoria')
+         .order('fecha', { ascending: false })
+         .limit(100)
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Rollback Deployment
+
+### Vercel
+
+1. Go to **Deployments** tab
+2. Find previous working deployment
+3. Click **⋯** → **Promote to Production**
+
+### Railway
+
+1. Go to **Deployments** tab
+2. Find previous deployment
+3. Click **Redeploy**
+
+### Git-Based Rollback
+
+For any platform:
+
+```bash Terminal
+# Revert last commit
+git revert HEAD
+git push
+
+# Or rollback to specific commit
+git reset --hard <commit-hash>
+git push --force
+```
+
+<Warning>
+  Use `--force` carefully! It rewrites Git history and can affect team members.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Dashboard Features" icon="chart-line" href="/features/dashboard">
+    Learn how to use the dashboard
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/transactions">
+    Integrate with the API
+  </Card>
+  <Card title="Customization" icon="palette" href="/development/customization">
+    Customize the UI and features
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/development/troubleshooting">
+    Fix common problems
+  </Card>
+</CardGroup>
+
+Congratulations! Your Sistema Financiero instance is now live. 🎉

@@ -1,0 +1,467 @@
+---
+title: 'Recurring Expenses API'
+description: 'Manage monthly recurring expenses and subscriptions with full CRUD operations'
+api: 'GET /api/gastos-recurrentes'
+---
+
+## Overview
+
+The Recurring Expenses API manages monthly subscriptions and recurring charges. It provides full CRUD (Create, Read, Update, Delete) operations for tracking regular monthly expenses like subscriptions, rent, utilities, and other recurring payments.
+
+## Authentication
+
+This endpoint uses Supabase authentication. Ensure your requests include valid authentication headers.
+
+## Database Schema
+
+The API reads from the `gastos_mensuales` table and maps fields to a frontend-friendly format.
+
+---
+
+# GET - List Recurring Expenses
+
+## Endpoint
+
+```
+GET /api/gastos-recurrentes
+```
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of recurring expense objects, ordered by billing day (ascending).
+  
+  <ResponseField name="id" type="string">
+    Unique identifier for the recurring expense
+  </ResponseField>
+  
+  <ResponseField name="nombre" type="string">
+    Name of the subscription/recurring expense (e.g., "Netflix", "Spotify")
+  </ResponseField>
+  
+  <ResponseField name="dia_cobro" type="number">
+    Day of month when charge occurs (1-31)
+  </ResponseField>
+  
+  <ResponseField name="monto" type="number">
+    Monthly charge amount in MXN
+  </ResponseField>
+  
+  <ResponseField name="activo" type="boolean">
+    Whether the recurring expense is active
+  </ResponseField>
+  
+  <ResponseField name="categoria" type="string">
+    Category (defaults to "Suscripciones")
+  </ResponseField>
+  
+  <ResponseField name="metodo_pago" type="string">
+    Payment method (defaults to "Tarjeta")
+  </ResponseField>
+  
+  <ResponseField name="cuenta" type="string" optional>
+    Associated account (currently null)
+  </ResponseField>
+  
+  <ResponseField name="ultima_ejecucion" type="string" optional>
+    Last execution timestamp (currently null)
+  </ResponseField>
+  
+  <ResponseField name="created_at" type="string">
+    Creation timestamp in ISO 8601 format
+  </ResponseField>
+  
+  <ResponseField name="updated_at" type="string">
+    Last update timestamp in ISO 8601 format
+  </ResponseField>
+</ResponseField>
+
+### Example Response
+
+<CodeGroup>
+
+```json Success
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "nombre": "Netflix",
+      "dia_cobro": 5,
+      "monto": 219.00,
+      "activo": true,
+      "categoria": "Suscripciones",
+      "metodo_pago": "Tarjeta",
+      "cuenta": null,
+      "ultima_ejecucion": null,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "nombre": "Spotify",
+      "dia_cobro": 12,
+      "monto": 119.00,
+      "activo": true,
+      "categoria": "Suscripciones",
+      "metodo_pago": "Tarjeta",
+      "cuenta": null,
+      "ultima_ejecucion": null,
+      "created_at": "2024-01-20T14:30:00Z",
+      "updated_at": "2024-01-20T14:30:00Z"
+    }
+  ]
+}
+```
+
+```json Error
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+</CodeGroup>
+
+---
+
+# POST - Create Recurring Expense
+
+## Endpoint
+
+```
+POST /api/gastos-recurrentes
+```
+
+## Request Body
+
+<ParamField body="nombre" type="string" required>
+  Name of the subscription/recurring expense
+  
+  Example: `"Amazon Prime"`
+</ParamField>
+
+<ParamField body="dia_cobro" type="number" required>
+  Day of month when charge occurs (1-31)
+  
+  Example: `15`
+</ParamField>
+
+<ParamField body="monto" type="number" required>
+  Monthly charge amount in MXN
+  
+  Example: `99.00`
+</ParamField>
+
+<ParamField body="activo" type="boolean" default="true">
+  Whether the recurring expense is active
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+
+```json Request Body
+{
+  "nombre": "Disney+",
+  "dia_cobro": 10,
+  "monto": 159.00,
+  "activo": true
+}
+```
+
+</CodeGroup>
+
+### Example Response
+
+<CodeGroup>
+
+```json Success (201)
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "nombre": "Disney+",
+      "dia_cobro": 10,
+      "monto": 159.00,
+      "activo": true,
+      "categoria": "Suscripciones",
+      "metodo_pago": "Tarjeta",
+      "cuenta": null,
+      "ultima_ejecucion": null,
+      "created_at": "2024-03-06T15:45:00Z",
+      "updated_at": "2024-03-06T15:45:00Z"
+    }
+  ]
+}
+```
+
+```json Error (500)
+{
+  "error": "Error message"
+}
+```
+
+</CodeGroup>
+
+---
+
+# PUT - Update Recurring Expense
+
+## Endpoint
+
+```
+PUT /api/gastos-recurrentes
+```
+
+## Request Body
+
+<ParamField body="id" type="string" required>
+  ID of the recurring expense to update
+</ParamField>
+
+<ParamField body="nombre" type="string">
+  Updated name
+</ParamField>
+
+<ParamField body="dia_cobro" type="number">
+  Updated billing day (1-31)
+</ParamField>
+
+<ParamField body="monto" type="number">
+  Updated amount
+</ParamField>
+
+<ParamField body="activo" type="boolean">
+  Updated active status
+</ParamField>
+
+### Example Request
+
+<CodeGroup>
+
+```json Request Body
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "nombre": "Netflix Premium",
+  "dia_cobro": 5,
+  "monto": 299.00,
+  "activo": true
+}
+```
+
+</CodeGroup>
+
+### Example Response
+
+<CodeGroup>
+
+```json Success (200)
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "nombre": "Netflix Premium",
+      "dia_cobro": 5,
+      "monto": 299.00,
+      "activo": true,
+      "categoria": "Suscripciones",
+      "metodo_pago": "Tarjeta",
+      "cuenta": null,
+      "ultima_ejecucion": null,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-03-06T16:00:00Z"
+    }
+  ]
+}
+```
+
+```json Error - Missing ID (400)
+{
+  "error": "ID requerido"
+}
+```
+
+```json Error - Database (500)
+{
+  "error": "Error message"
+}
+```
+
+</CodeGroup>
+
+---
+
+# DELETE - Remove Recurring Expense
+
+## Endpoint
+
+```
+DELETE /api/gastos-recurrentes?id={id}
+```
+
+## Query Parameters
+
+<ParamField query="id" type="string" required>
+  ID of the recurring expense to delete
+</ParamField>
+
+### Example Response
+
+<CodeGroup>
+
+```json Success (200)
+{
+  "success": true
+}
+```
+
+```json Error - Missing ID (400)
+{
+  "error": "ID requerido"
+}
+```
+
+```json Error - Database (500)
+{
+  "error": "Error message"
+}
+```
+
+</CodeGroup>
+
+---
+
+## Code Examples
+
+<CodeGroup>
+
+```javascript JavaScript - List All
+const response = await fetch('/api/gastos-recurrentes');
+const { data } = await response.json();
+
+console.log(`Found ${data.length} recurring expenses`);
+data.forEach(expense => {
+  console.log(`${expense.nombre}: $${expense.monto} on day ${expense.dia_cobro}`);
+});
+```
+
+```javascript JavaScript - Create
+const response = await fetch('/api/gastos-recurrentes', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    nombre: 'YouTube Premium',
+    dia_cobro: 20,
+    monto: 129.00,
+    activo: true
+  })
+});
+
+const { data } = await response.json();
+console.log('Created:', data[0]);
+```
+
+```javascript JavaScript - Update
+const response = await fetch('/api/gastos-recurrentes', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    id: 'expense-id-here',
+    nombre: 'Spotify Family',
+    monto: 179.00,
+    activo: true
+  })
+});
+
+const { data } = await response.json();
+console.log('Updated:', data[0]);
+```
+
+```javascript JavaScript - Delete
+const response = await fetch('/api/gastos-recurrentes?id=expense-id-here', {
+  method: 'DELETE'
+});
+
+const { success } = await response.json();
+console.log('Deleted:', success);
+```
+
+```python Python - List
+import requests
+
+response = requests.get('http://localhost:3000/api/gastos-recurrentes')
+data = response.json()
+
+for expense in data['data']:
+    print(f"{expense['nombre']}: ${expense['monto']} on day {expense['dia_cobro']}")
+```
+
+```python Python - Create
+import requests
+
+response = requests.post(
+    'http://localhost:3000/api/gastos-recurrentes',
+    json={
+        'nombre': 'HBO Max',
+        'dia_cobro': 15,
+        'monto': 149.00,
+        'activo': True
+    }
+)
+
+result = response.json()
+print(f"Created: {result['data'][0]['id']}")
+```
+
+```bash cURL - List
+curl http://localhost:3000/api/gastos-recurrentes
+```
+
+```bash cURL - Create
+curl -X POST http://localhost:3000/api/gastos-recurrentes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nombre": "Apple Music",
+    "dia_cobro": 8,
+    "monto": 109.00,
+    "activo": true
+  }'
+```
+
+```bash cURL - Update
+curl -X PUT http://localhost:3000/api/gastos-recurrentes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "expense-id-here",
+    "nombre": "Apple One",
+    "monto": 219.00
+  }'
+```
+
+```bash cURL - Delete
+curl -X DELETE "http://localhost:3000/api/gastos-recurrentes?id=expense-id-here"
+```
+
+</CodeGroup>
+
+## Field Mapping
+
+The API maps database fields to frontend-friendly names:
+
+| Database Field | API Field | Type | Notes |
+|----------------|-----------|------|-------|
+| `nombre_app` | `nombre` | string | Subscription/expense name |
+| `dia_de_cobro` | `dia_cobro` | number | Billing day (1-31) |
+| `monto` | `monto` | number | Monthly amount |
+| `activo` | `activo` | boolean | Active status |
+
+<Note>
+  The `categoria` field defaults to "Suscripciones" and `metodo_pago` defaults to "Tarjeta" for all recurring expenses. These values are mapped from the database schema.
+</Note>
+
+## Use Cases
+
+- **Subscription Management:** Track Netflix, Spotify, and other monthly subscriptions
+- **Recurring Bills:** Monitor rent, utilities, insurance payments
+- **Budget Planning:** Calculate total monthly recurring expenses
+- **Automated Reminders:** Use `dia_cobro` to set up payment reminders
+- **Expense Forecasting:** Project future monthly expenses based on active recurring charges

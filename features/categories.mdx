@@ -1,0 +1,129 @@
+---
+title: 'Categories'
+description: 'Organize your transactions with expense and income categories'
+icon: 'folder-open'
+---
+
+Sistema Financiero uses categories to help you organize and analyze your transactions. Categories are automatically applied when you register transactions through any method (manual entry, AI chat, Excel import, or receipt scanning).
+
+## Expense Categories
+
+Track where your money goes with these predefined expense categories:
+
+<CardGroup cols={2}>
+  <Card title="Alimentación" icon="utensils">
+    Food and dining expenses
+  </Card>
+  <Card title="Transporte" icon="car">
+    Transportation costs including fuel, public transit, and vehicle maintenance
+  </Card>
+  <Card title="Vivienda" icon="house">
+    Housing expenses like rent, utilities, and home maintenance
+  </Card>
+  <Card title="Salud" icon="heart-pulse">
+    Healthcare, medicine, and medical expenses
+  </Card>
+  <Card title="Entretenimiento" icon="gamepad">
+    Entertainment, leisure, and recreational activities
+  </Card>
+  <Card title="Educación" icon="graduation-cap">
+    Educational expenses and learning materials
+  </Card>
+  <Card title="Suscripciones" icon="repeat">
+    Recurring subscriptions like streaming services, software, etc.
+  </Card>
+  <Card title="Otros Gastos" icon="ellipsis">
+    Other expenses that don't fit into the above categories
+  </Card>
+</CardGroup>
+
+## Income Categories
+
+Track your revenue streams with these income categories:
+
+<CardGroup cols={2}>
+  <Card title="Salario" icon="money-bill">
+    Regular salary and wages
+  </Card>
+  <Card title="Ventas" icon="cart-shopping">
+    Product sales revenue
+  </Card>
+  <Card title="Servicios" icon="briefcase">
+    Service income and consulting fees
+  </Card>
+  <Card title="Inversiones" icon="chart-line">
+    Investment returns and dividends
+  </Card>
+  <Card title="Tours" icon="bus">
+    Tourism and tour guide services
+  </Card>
+  <Card title="Comedor" icon="plate-wheat">
+    Restaurant or cafeteria sales
+  </Card>
+  <Card title="Reservaciones" icon="calendar-check">
+    Booking and reservation fees
+  </Card>
+  <Card title="Anticipos" icon="credit-card">
+    Advance payments and deposits
+  </Card>
+  <Card title="Otros Ingresos" icon="coins">
+    Other income sources
+  </Card>
+</CardGroup>
+
+## How to Use Categories
+
+### Manual Transaction Entry
+
+When registering a transaction manually, select the appropriate category from the dropdown menu:
+
+1. Navigate to **Registro** page
+2. Choose transaction type (Gasto or Ingreso)
+3. Select the category that best matches your transaction
+4. Complete the remaining fields and submit
+
+<Note>
+The category dropdown automatically updates based on whether you're registering an expense or income.
+</Note>
+
+### AI Chat Assistant
+
+When using the AI chat to register transactions, simply mention the category in natural language:
+
+<Accordion title="Example prompts">
+  - "Register a $50 expense for Alimentación"
+  - "Add income of $1500 from Tours with 20 passengers"
+  - "Record $200 Transporte expense for gasoline"
+</Accordion>
+
+The AI will automatically recognize and apply the correct category.
+
+### Excel/CSV Import
+
+When importing transactions from Excel, include the category name in the `categoria` column:
+
+```csv
+fecha,tipo,categoria,monto,descripcion
+2025-10-06,gasto,Alimentación,350,Restaurant dinner
+2025-10-06,ingreso,Tours,1200,Morning group tour
+```
+
+<Warning>
+Make sure category names match exactly (including accents) to ensure proper classification.
+</Warning>
+
+### Receipt Scanning
+
+When you upload a receipt photo, the AI automatically suggests a category based on the receipt content. You can accept the suggestion or change it before saving.
+
+## Viewing by Category
+
+You can analyze your spending and income patterns by category:
+
+- **Dashboard**: View category breakdowns in the analytics section
+- **Reports**: Generate detailed reports grouped by category
+- **Data Views**: Sort and filter transactions by category to see specific spending patterns
+
+<Tip>
+Regularly reviewing your category breakdown helps identify spending trends and opportunities for savings.
+</Tip>

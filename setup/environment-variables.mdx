@@ -1,0 +1,482 @@
+---
+title: 'Environment Variables'
+description: 'Configure environment variables for Sistema Financiero'
+icon: 'key'
+---
+
+## Overview
+
+Sistema Financiero uses environment variables to store sensitive configuration like API keys and database URLs. This keeps secrets out of your code and allows different configurations for development and production.
+
+<Warning>
+  **Never commit `.env.local` to version control!** The `.gitignore` file is configured to exclude it, but always double-check.
+</Warning>
+
+## Environment File Setup
+
+<Steps>
+  <Step title="Copy Example File">
+    Create your environment file from the template:
+
+    ```bash Terminal
+    cp .env.example .env.local
+    ```
+
+    <Note>
+      `.env.local` is automatically loaded by Next.js and takes precedence over `.env`.
+    </Note>
+  </Step>
+
+  <Step title="Edit Environment Variables">
+    Open `.env.local` in your code editor and fill in the values:
+
+    ```bash .env.local
+    # Supabase Configuration (REQUIRED)
+    NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+    # OpenRouter API (OPTIONAL - for AI chat features)
+    # Get your key at: https://openrouter.ai/keys
+    OPENROUTER_API_KEY=
+
+    # App Configuration
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+    ```
+  </Step>
+
+  <Step title="Restart Development Server">
+    After modifying environment variables, restart your dev server:
+
+    ```bash Terminal
+    # Stop the server (Ctrl+C)
+    # Then restart:
+    npm run dev
+    ```
+
+    <Info>
+      Next.js only reads environment variables at startup. Changes require a restart.
+    </Info>
+  </Step>
+</Steps>
+
+## Required Variables
+
+These environment variables are **mandatory** for the application to function:
+
+### NEXT_PUBLIC_SUPABASE_URL
+
+**Description:** Your Supabase project URL
+
+**Where to find it:**
+1. Go to your [Supabase Dashboard](https://app.supabase.com/)
+2. Select your project
+3. Go to **Settings** → **API**
+4. Copy the **Project URL**
+
+**Format:**
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
+```
+
+<Note>
+  The `NEXT_PUBLIC_` prefix makes this variable available in browser code. This is safe because the URL is public.
+</Note>
+
+**Example:**
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://xyzcompany.supabase.co
+```
+
+### NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+**Description:** Your Supabase anonymous (public) API key
+
+**Where to find it:**
+1. Go to your [Supabase Dashboard](https://app.supabase.com/)
+2. Select your project
+3. Go to **Settings** → **API**
+4. Copy the **anon public** key (not the service_role key!)
+
+**Format:**
+```bash
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+<Warning>
+  Use the **anon** key, not the **service_role** key. The service_role key bypasses Row Level Security and should never be exposed in frontend code.
+</Warning>
+
+**Example:**
+```bash
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5emNvbXBhbnkiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY5MDAwMDAwMCwiZXhwIjoxNzIwMDAwMDAwfQ.abc123def456ghi789jkl012mno345pqr678stu901vwx234yz
+```
+
+### NEXT_PUBLIC_APP_URL
+
+**Description:** The base URL where your app is deployed
+
+**Development:**
+```bash
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**Production:**
+```bash
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+```
+
+<Info>
+  This is used for OpenRouter API attribution and generating absolute URLs (e.g., for receipts).
+</Info>
+
+## Optional Variables
+
+These variables enable additional features:
+
+### OPENROUTER_API_KEY
+
+**Description:** API key for AI-powered chat features
+
+**Required for:**
+- AI chat agent (`/agente-mejorado` page)
+- OCR receipt scanning (`/upload-image` API)
+- Natural language transaction entry
+
+**Where to get it:**
+1. Go to [OpenRouter.ai](https://openrouter.ai/)
+2. Sign up for a free account
+3. Go to [Keys page](https://openrouter.ai/keys)
+4. Click **Create Key**
+5. Copy the key (starts with `sk-or-v1-`)
+
+**Format:**
+```bash
+OPENROUTER_API_KEY=sk-or-v1-0123456789abcdef0123456789abcdef0123456789abcdef
+```
+
+<Note>
+  **This variable does NOT have the `NEXT_PUBLIC_` prefix** - it's server-side only for security.
+</Note>
+
+**Pricing:**
+- OpenRouter offers a free tier with $0.05 initial credit
+- Most models cost $0.001-$0.01 per request
+- Sistema Financiero uses `google/gemini-2.5-flash` (very affordable)
+
+**Example:**
+```bash
+OPENROUTER_API_KEY=sk-or-v1-abc123def456ghi789jkl012mno345pqr678stu901vwx234yz567890
+```
+
+<Warning>
+  If you skip this variable, the AI chat and OCR features will not work. The rest of the app (manual entry, dashboard) will function normally.
+</Warning>
+
+## Environment Variable Precedence
+
+Next.js loads environment files in this order (later files override earlier):
+
+1. `.env` - Default values for all environments
+2. `.env.local` - Local overrides (git-ignored)
+3. `.env.development` - Development-specific
+4. `.env.development.local` - Local dev overrides
+5. `.env.production` - Production-specific
+6. `.env.production.local` - Local prod overrides
+
+<Tip>
+  For most projects, using just `.env.local` is sufficient. It overrides everything.
+</Tip>
+
+## Accessing Variables in Code
+
+### Client-Side (Browser)
+
+Variables with `NEXT_PUBLIC_` prefix:
+
+```typescript components/Example.tsx
+'use client'
+
+export function Example() {
+  // ✅ Accessible in browser
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  
+  // ❌ Returns undefined (no NEXT_PUBLIC_ prefix)
+  const apiKey = process.env.OPENROUTER_API_KEY
+  
+  return <div>Supabase URL: {supabaseUrl}</div>
+}
+```
+
+### Server-Side (API Routes / Server Components)
+
+All variables are accessible:
+
+```typescript app/api/example/route.ts
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  // ✅ Both accessible on server
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const openrouterKey = process.env.OPENROUTER_API_KEY
+  
+  return NextResponse.json({ 
+    supabaseUrl,
+    hasOpenRouterKey: !!openrouterKey // Don't expose the actual key!
+  })
+}
+```
+
+<Warning>
+  Never send server-only variables (without `NEXT_PUBLIC_`) to the client. They contain sensitive credentials.
+</Warning>
+
+## Production Deployment
+
+### Vercel
+
+Add environment variables in the Vercel dashboard:
+
+<Steps>
+  <Step title="Go to Project Settings">
+    1. Open your project in [Vercel Dashboard](https://vercel.com/dashboard)
+    2. Click **Settings**
+    3. Click **Environment Variables**
+  </Step>
+
+  <Step title="Add Variables">
+    For each variable:
+    1. **Key:** Variable name (e.g., `NEXT_PUBLIC_SUPABASE_URL`)
+    2. **Value:** Variable value
+    3. **Environment:** Select `Production`, `Preview`, and `Development`
+    4. Click **Save**
+
+    <Info>
+      Checking all three environments ensures variables work in preview deployments and local development with Vercel CLI.
+    </Info>
+  </Step>
+
+  <Step title="Redeploy">
+    Trigger a new deployment:
+    ```bash Terminal
+    git commit --allow-empty -m "Update env vars"
+    git push
+    ```
+
+    Or click **Redeploy** in the Vercel dashboard.
+  </Step>
+</Steps>
+
+### Railway
+
+Add variables in the Railway dashboard:
+
+<Steps>
+  <Step title="Open Service Settings">
+    1. Go to [Railway Dashboard](https://railway.app/dashboard)
+    2. Select your project
+    3. Click on your service
+    4. Go to **Variables** tab
+  </Step>
+
+  <Step title="Add Variables">
+    Click **New Variable** and add each variable:
+    - `NEXT_PUBLIC_SUPABASE_URL`
+    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    - `OPENROUTER_API_KEY`
+    - `NEXT_PUBLIC_APP_URL` (use your Railway URL, e.g., `https://your-app.up.railway.app`)
+  </Step>
+
+  <Step title="Deploy">
+    Railway automatically redeploys when you save variables.
+  </Step>
+</Steps>
+
+### Other Platforms
+
+<AccordionGroup>
+  <Accordion title="Netlify">
+    1. Go to **Site settings** → **Build & deploy** → **Environment**
+    2. Click **Edit variables**
+    3. Add each variable
+    4. Redeploy your site
+  </Accordion>
+
+  <Accordion title="Render">
+    1. Go to your service dashboard
+    2. Click **Environment** tab
+    3. Add each variable
+    4. Click **Save Changes**
+    5. Manually trigger a deploy from the **Manual Deploy** dropdown
+  </Accordion>
+
+  <Accordion title="Docker">
+    Pass variables using `-e` flag:
+    ```bash
+    docker run \
+      -e NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+      -e NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc... \
+      -e OPENROUTER_API_KEY=sk-or-v1-... \
+      -e NEXT_PUBLIC_APP_URL=https://your-domain.com \
+      -p 3000:3000 \
+      your-image-name
+    ```
+
+    Or use a `.env` file:
+    ```bash
+    docker run --env-file .env.production -p 3000:3000 your-image-name
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Security Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Never Commit Secrets" icon="shield-xmark">
+    - Add `.env.local` to `.gitignore`
+    - Use `.env.example` for documentation
+    - Rotate keys if accidentally committed
+  </Card>
+  
+  <Card title="Use NEXT_PUBLIC_ Carefully" icon="eye">
+    - Only for non-sensitive data
+    - Exposed to all website visitors
+    - Examples: Supabase URL, app version
+  </Card>
+  
+  <Card title="Rotate Keys Regularly" icon="rotate">
+    - Change API keys every 90 days
+    - Use Supabase's key rotation feature
+    - Update all deployment environments
+  </Card>
+  
+  <Card title="Different Keys per Environment" icon="layer-group">
+    - Use separate Supabase projects for dev/prod
+    - Different OpenRouter keys for testing
+    - Prevents accidental data mixing
+  </Card>
+</CardGroup>
+
+## Validating Your Setup
+
+### Check Environment Variables
+
+Create a test API route to verify variables are loaded:
+
+```typescript app/api/test-env/route.ts
+import { NextResponse } from 'next/server'
+
+export async function GET() {
+  return NextResponse.json({
+    hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL,
+  })
+}
+```
+
+Visit `http://localhost:3000/api/test-env` to see:
+
+```json Response
+{
+  "hasSupabaseUrl": true,
+  "hasSupabaseKey": true,
+  "hasOpenRouterKey": true,
+  "appUrl": "http://localhost:3000"
+}
+```
+
+<Warning>
+  Delete this test route before deploying to production! It exposes which secrets you have configured.
+</Warning>
+
+### Test Supabase Connection
+
+```typescript app/api/test-supabase/route.ts
+import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
+
+export async function GET() {
+  try {
+    const { data, error } = await supabase
+      .from('transacciones')
+      .select('count')
+      .limit(1)
+    
+    if (error) throw error
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Supabase connected successfully!' 
+    })
+  } catch (error) {
+    return NextResponse.json({ 
+      success: false, 
+      error: String(error) 
+    }, { status: 500 })
+  }
+}
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Error: Missing Supabase environment variables">
+    **Problem:** App crashes with "Missing Supabase environment variables"
+    
+    **Solution:**
+    1. Verify `.env.local` exists and is in the project root
+    2. Check variable names match exactly (case-sensitive)
+    3. Restart dev server after adding variables
+    4. Ensure no extra spaces around `=` sign:
+       ```bash
+       # ✅ Correct
+       NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co
+       
+       # ❌ Wrong (spaces)
+       NEXT_PUBLIC_SUPABASE_URL = https://example.supabase.co
+       ```
+  </Accordion>
+
+  <Accordion title="process.env.VARIABLE returns undefined">
+    **Problem:** Variable shows undefined in code
+    
+    **Solution:**
+    1. **Client-side:** Add `NEXT_PUBLIC_` prefix
+    2. **Server-side:** Restart dev server (Next.js caches env vars)
+    3. Check for typos in variable name
+    4. Verify `.env.local` is in project root (not `src/` or `app/`)
+  </Accordion>
+
+  <Accordion title="Variables work locally but not in production">
+    **Problem:** App works on localhost but fails on Vercel/Railway
+    
+    **Solution:**
+    1. Add variables to deployment platform's UI (not just `.env.local`)
+    2. Check you added them to "Production" environment
+    3. Trigger a new deployment after saving variables
+    4. Check deployment logs for specific error messages
+  </Accordion>
+
+  <Accordion title="OpenRouter API calls fail">
+    **Problem:** AI chat doesn't work, 401/403 errors
+    
+    **Solution:**
+    1. Verify `OPENROUTER_API_KEY` is set (no `NEXT_PUBLIC_` prefix)
+    2. Check you have credits at [OpenRouter dashboard](https://openrouter.ai/credits)
+    3. Ensure key starts with `sk-or-v1-`
+    4. Test with curl:
+       ```bash
+       curl https://openrouter.ai/api/v1/auth/key \
+         -H "Authorization: Bearer $OPENROUTER_API_KEY"
+       ```
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Environment configured! Now deploy your application:
+
+<Card title="Deployment" icon="rocket" href="/setup/deployment">
+  Deploy Sistema Financiero to Vercel, Railway, or other platforms
+</Card>

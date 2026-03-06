@@ -1,0 +1,248 @@
+---
+title: Introduction
+description: Sistema Financiero is a modern personal finance management SaaS application with AI-powered transaction tracking, real-time analytics, and intelligent expense categorization.
+---
+
+# Welcome to Sistema Financiero
+
+Sistema Financiero is a full-stack personal finance management application that helps individuals, families, and small businesses track their income and expenses with modern tools including AI chat, OCR receipt scanning, and real-time analytics dashboards.
+
+## What is Sistema Financiero?
+
+Sistema Financiero combines traditional financial tracking with cutting-edge AI technology to make expense management effortless. Whether you prefer chatting with an AI assistant, scanning receipts with your phone, or filling out forms, this system adapts to your workflow.
+
+<CardGroup cols={2}>
+  <Card title="AI-Powered Tracking" icon="robot">
+    Register transactions through natural language chat powered by Gemini 2.5 Flash
+  </Card>
+  <Card title="Smart OCR Scanning" icon="camera">
+    Scan receipts and tickets to automatically extract amounts and categories
+  </Card>
+  <Card title="Real-Time Analytics" icon="chart-line">
+    Visualize your finances with interactive KPIs, charts, and trend analysis
+  </Card>
+  <Card title="Multi-Entry Methods" icon="keyboard">
+    Choose between AI chat, manual forms, bulk entry, or Excel upload
+  </Card>
+</CardGroup>
+
+## Who is it for?
+
+Sistema Financiero is designed for:
+
+<Steps>
+  <Step title="Individuals">
+    Track personal expenses and income to build better financial habits
+  </Step>
+  <Step title="Families">
+    Manage household budgets collaboratively with multi-user support
+  </Step>
+  <Step title="Small Businesses">
+    Monitor daily cash flow, expenses, and revenue for restaurants, retail stores, or service providers
+  </Step>
+  <Step title="Freelancers">
+    Keep track of project income, business expenses, and tax deductions
+  </Step>
+</Steps>
+
+## Key Features
+
+### Dashboard with Real-Time KPIs
+
+The main dashboard provides instant visibility into your financial health:
+
+- **Total Income** - Track all revenue streams
+- **Total Expenses** - Monitor spending across categories
+- **Net Balance** - See your current financial position at a glance
+- **Transaction Count** - Number of transactions in selected period
+
+<Info>
+  The dashboard supports multiple time views: Daily, Weekly, Monthly, or Custom date ranges.
+</Info>
+
+### AI Financial Assistant
+
+Chat naturally with an AI agent powered by Google's Gemini 2.5 Flash:
+
+```text
+User: "Gasté $200 en gasolina"
+
+AI: ✅ Gasto registrado exitosamente!
+
+💰 Monto: $200 MXN
+📁 Categoría: Transporte
+💳 Método: Efectivo
+👤 Registrado por: Usuario
+
+🎉 Puedes ver el resumen actualizado en el Dashboard.
+```
+
+The AI automatically:
+- Extracts transaction amounts
+- Categorizes expenses intelligently
+- Confirms details before saving
+- Supports follow-up questions
+
+### OCR Receipt Scanning
+
+Upload photos of receipts or invoices and let the AI extract:
+- Transaction amount
+- Merchant/vendor name
+- Purchase category
+- Date and time
+
+<Tip>
+  Images are stored securely in Supabase Storage with public URLs for future reference.
+</Tip>
+
+### Smart Categorization
+
+Transactions are automatically organized into predefined categories:
+
+**Expense Categories:**
+- Alimentación (Food)
+- Transporte (Transportation)
+- Vivienda (Housing)
+- Salud (Health)
+- Entretenimiento (Entertainment)
+- Educación (Education)
+- Otros Gastos (Other Expenses)
+
+**Income Categories:**
+- Salario (Salary)
+- Ventas (Sales)
+- Servicios (Services)
+- Inversiones (Investments)
+- Otros Ingresos (Other Income)
+
+### Interactive Charts & Trends
+
+Visualize your financial data with Chart.js powered line charts:
+
+- Income vs Expenses over time
+- Daily, weekly, monthly, or custom period views
+- Responsive design for mobile and desktop
+- Dark mode support
+
+### Multiple Payment Methods
+
+Track how transactions are paid:
+- **Efectivo** (Cash)
+- **Tarjeta** (Card)
+- **Transferencia** (Bank Transfer)
+
+## Technology Stack
+
+Sistema Financiero is built with modern, production-ready technologies:
+
+<CodeGroup>
+```json package.json
+{
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0",
+    "chart.js": "^4.5.0",
+    "lucide-react": "^0.544.0",
+    "mermaid": "^11.12.0",
+    "next": "15.5.4",
+    "next-themes": "^0.4.6",
+    "react": "19.1.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "19.1.0"
+  }
+}
+```
+</CodeGroup>
+
+**Frontend:**
+- Next.js 15.5.4 (React 19)
+- TypeScript 5
+- Tailwind CSS 4
+- Chart.js for visualizations
+- Lucide React for icons
+
+**Backend:**
+- Next.js API Routes (serverless)
+- Supabase PostgreSQL database
+- OpenRouter for multi-LLM access
+- Google Gemini 2.5 Flash AI model
+
+**Infrastructure:**
+- Supabase for database + storage + auth
+- Vercel for deployment (recommended)
+- Row Level Security (RLS) for data isolation
+
+## Key Benefits
+
+<CardGroup cols={2}>
+  <Card title="Effortless Entry" icon="wand-magic-sparkles">
+    Register transactions in seconds through AI chat instead of tedious form-filling
+  </Card>
+  <Card title="Real-Time Insights" icon="bolt">
+    See your financial position update instantly as you add transactions
+  </Card>
+  <Card title="Multi-Device" icon="mobile">
+    Fully responsive design works on desktop, tablet, and mobile
+  </Card>
+  <Card title="Secure & Private" icon="shield-check">
+    Bank-level security with Row Level Security and encrypted storage
+  </Card>
+  <Card title="Open Source" icon="code">
+    MIT licensed - customize and extend to fit your needs
+  </Card>
+  <Card title="Cost Effective" icon="dollar-sign">
+    Free tier available on Supabase and Vercel for personal use
+  </Card>
+</CardGroup>
+
+## Use Cases
+
+### Personal Finance Management
+
+"I want to track where my money goes each month and reduce unnecessary spending."
+
+- Register expenses as they happen through AI chat
+- Review spending patterns in the dashboard
+- Set up recurring expense tracking
+- Export data for tax preparation
+
+### Family Budget Tracking
+
+"Our family needs to manage household expenses and save for goals."
+
+- Multiple family members can log transactions
+- See consolidated view of household finances
+- Track shared expenses like groceries and utilities
+- Monitor progress toward savings goals
+
+### Small Business Cash Flow
+
+"I run a small restaurant and need to track daily revenue and costs."
+
+- Use daily cut feature for end-of-day reconciliation
+- Scan receipts from suppliers automatically
+- Monitor cash flow trends over weeks and months
+- Generate financial reports for accounting
+
+### Freelance Income & Expenses
+
+"I need to track project income and deductible business expenses."
+
+- Categorize income by project/client
+- Log business expenses with receipt photos
+- Generate reports for quarterly tax filing
+- Track profitability by service type
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    Understand the system design and data flow
+  </Card>
+</CardGroup>
+
+<Note>
+  **Ready to dive in?** Follow the [Quickstart Guide](/quickstart) to set up your first Sistema Financiero instance.
+</Note>

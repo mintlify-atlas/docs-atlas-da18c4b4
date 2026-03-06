@@ -1,0 +1,303 @@
+---
+title: Contributing Guide
+description: Learn how to contribute to Sistema Financiero and follow our development practices
+icon: heart-handshake
+---
+
+## Welcome Contributors
+
+Thank you for your interest in contributing to Sistema Financiero! This guide will help you get started with contributing to the project, whether you're fixing bugs, adding features, or improving documentation.
+
+## Getting Started
+
+<Steps>
+  <Step title="Fork the Repository">
+    Start by forking the repository to your GitHub account:
+    
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/sistema-financiero-app.git
+    cd sistema-financiero-app
+    ```
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required packages:
+    
+    ```bash
+    npm install
+    ```
+  </Step>
+
+  <Step title="Set Up Environment">
+    Copy the example environment file and configure your local environment:
+    
+    ```bash
+    cp .env.example .env.local
+    ```
+    
+    Add your Supabase credentials and API keys as needed.
+  </Step>
+
+  <Step title="Create a Feature Branch">
+    Create a new branch for your changes:
+    
+    ```bash
+    git checkout -b feature/your-feature-name
+    ```
+  </Step>
+</Steps>
+
+## Development Workflow
+
+### Running the Development Server
+
+Start the Next.js development server:
+
+```bash
+npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
+
+### Building for Production
+
+Test your changes with a production build:
+
+```bash
+npm run build
+npm run start
+```
+
+<Note>
+  Always test your changes with a production build before submitting a pull request to catch any build-time errors.
+</Note>
+
+## Commit Conventions
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/) for clear and structured commit messages:
+
+### Commit Types
+
+| Type | Description | Example |
+|------|-------------|----------|
+| `feat` | New feature | `feat: add expense category filter` |
+| `fix` | Bug fix | `fix: resolve date picker timezone issue` |
+| `docs` | Documentation only | `docs: update API reference` |
+| `style` | Formatting, missing semicolons | `style: format components with prettier` |
+| `refactor` | Code refactoring | `refactor: simplify chart data processing` |
+| `test` | Adding tests | `test: add unit tests for KPI calculations` |
+| `chore` | Maintenance tasks | `chore: update dependencies` |
+| `perf` | Performance improvements | `perf: optimize transaction queries` |
+
+### Commit Message Format
+
+```bash
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Examples:**
+
+```bash
+# Simple commit
+git commit -m "feat: add dark mode toggle"
+
+# Commit with scope
+git commit -m "fix(dashboard): correct KPI calculation for monthly view"
+
+# Commit with body
+git commit -m "refactor(api): improve transaction endpoint performance
+
+Optimized database queries and added caching layer.
+Reduced average response time from 500ms to 150ms."
+```
+
+## Pull Request Process
+
+<Steps>
+  <Step title="Ensure Quality">
+    Before submitting, make sure:
+    - All tests pass (if applicable)
+    - Code builds successfully
+    - No console errors or warnings
+    - Code follows existing style patterns
+  </Step>
+
+  <Step title="Push Your Changes">
+    ```bash
+    git add .
+    git commit -m "feat: your feature description"
+    git push origin feature/your-feature-name
+    ```
+  </Step>
+
+  <Step title="Create Pull Request">
+    Go to GitHub and create a pull request with:
+    - **Clear title**: Summarize the change in one line
+    - **Description**: Explain what changed and why
+    - **Screenshots**: Include visual changes (if applicable)
+    - **Testing**: Describe how you tested the changes
+  </Step>
+
+  <Step title="Code Review">
+    - Address any feedback from reviewers
+    - Make requested changes in new commits
+    - Push updates to the same branch
+  </Step>
+</Steps>
+
+### Pull Request Template
+
+```markdown
+## Description
+Brief description of what this PR does.
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Changes Made
+- List of specific changes
+- Another change
+
+## Testing
+Describe how you tested these changes.
+
+## Screenshots (if applicable)
+Add screenshots for UI changes.
+
+## Related Issues
+Closes #123
+```
+
+## Code Style Guidelines
+
+### TypeScript
+
+- Use TypeScript for all new files
+- Define proper interfaces and types
+- Avoid using `any` type when possible
+
+```typescript
+// Good
+interface Transaction {
+  id: string;
+  fecha: string;
+  tipo: 'ingreso' | 'gasto';
+  monto: number;
+  categoria: string;
+}
+
+// Avoid
+const data: any = {...};
+```
+
+### React Components
+
+- Use functional components with hooks
+- Keep components focused and single-purpose
+- Extract reusable logic into custom hooks
+
+```typescript
+// Good
+export default function TransactionCard({ transaction }: { transaction: Transaction }) {
+  return (
+    <div className="p-4 border rounded-lg">
+      {/* component content */}
+    </div>
+  );
+}
+```
+
+### File Naming
+
+- Components: `PascalCase.tsx` (e.g., `KPICard.tsx`)
+- Hooks: `camelCase.ts` with `use` prefix (e.g., `useEnhancedChat.ts`)
+- Utilities: `camelCase.ts` (e.g., `supabase.ts`)
+- API Routes: `route.ts` (Next.js convention)
+
+## Testing Your Changes
+
+### Manual Testing Checklist
+
+- [ ] Test in development mode (`npm run dev`)
+- [ ] Test production build (`npm run build && npm run start`)
+- [ ] Test on different screen sizes (mobile, tablet, desktop)
+- [ ] Test with dark mode enabled
+- [ ] Verify no console errors or warnings
+- [ ] Test edge cases and error scenarios
+
+### Feature-Specific Testing
+
+**For Dashboard Changes:**
+- Verify KPIs calculate correctly
+- Check charts render properly
+- Test date range filters
+
+**For AI Agent Changes:**
+- Test natural language parsing
+- Verify transactions are saved correctly
+- Check error handling for failed requests
+
+**For API Changes:**
+- Test all endpoints with different parameters
+- Verify error responses
+- Check database queries are optimized
+
+## Common Contribution Areas
+
+<Card title="Good First Issues" icon="code">
+  Perfect for newcomers:
+  - Fix typos in documentation
+  - Add new expense/income categories
+  - Improve error messages
+  - Add input validation
+  - Enhance mobile responsiveness
+</Card>
+
+<Card title="Feature Additions" icon="sparkles">
+  More involved contributions:
+  - Add new chart types
+  - Implement transaction filters
+  - Add export functionality (CSV, PDF)
+  - Create recurring transactions
+  - Add budget tracking
+</Card>
+
+<Card title="Performance Improvements" icon="gauge">
+  Optimization opportunities:
+  - Optimize database queries
+  - Implement caching strategies
+  - Reduce bundle size
+  - Improve loading states
+  - Add pagination for large datasets
+</Card>
+
+## Need Help?
+
+If you're stuck or have questions:
+
+- **GitHub Issues**: Ask questions or report bugs
+- **GitHub Discussions**: General questions and ideas
+- **Documentation**: Check the [Code Structure](/development/code-structure) guide
+
+<Note>
+  Don't be afraid to ask for help! We're here to support contributors at all skill levels.
+</Note>
+
+## Code of Conduct
+
+- Be respectful and inclusive
+- Provide constructive feedback
+- Focus on the code, not the person
+- Welcome newcomers and help them learn
+- Follow the project's technical standards
+
+## License
+
+By contributing to Sistema Financiero, you agree that your contributions will be licensed under the MIT License.

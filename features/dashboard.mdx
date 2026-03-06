@@ -1,0 +1,175 @@
+---
+title: 'Dashboard'
+description: 'Monitor your finances in real-time with comprehensive KPIs, charts, and transaction views'
+icon: 'chart-line'
+---
+
+The Dashboard is your financial command center, providing an at-a-glance view of your income, expenses, and overall financial health.
+
+## Overview
+
+The Dashboard aggregates all your financial data into an intuitive interface with real-time updates. It's designed to give you immediate insights into your financial status across different time periods.
+
+<Note>
+The Dashboard automatically processes recurring expenses when loaded, ensuring your data is always up-to-date.
+</Note>
+
+## Key Performance Indicators (KPIs)
+
+The Dashboard displays four critical metrics at the top:
+
+<CardGroup cols={2}>
+  <Card title="Income" icon="arrow-trend-up" color="#10b981">
+    Total income for the selected period, displayed in Mexican Pesos (MXN)
+  </Card>
+  <Card title="Expenses" icon="arrow-trend-down" color="#ef4444">
+    Total expenses for the selected period
+  </Card>
+  <Card title="Net Balance" icon="scale-balanced" color="#3b82f6">
+    Your bottom line: income minus expenses. Color-coded green for positive, red for negative
+  </Card>
+  <Card title="Transactions" icon="list" color="#8b5cf6">
+    Total number of transactions recorded in the period
+  </Card>
+</CardGroup>
+
+## Time Period Selector
+
+Analyze your finances across different time frames:
+
+### Preset Views
+
+- **Daily View**: Shows data for today only
+- **Weekly View**: Last 7 days of financial activity
+- **Monthly View**: Last 30 days (default view)
+- **Custom Range**: Select any specific date range
+
+### Using Custom Date Ranges
+
+1. Click the **"Personalizada"** (Custom) button
+2. A date picker panel appears with shortcuts
+3. Select your start date and end date
+4. Click **"Aplicar"** (Apply) to update the view
+
+<Tip>
+The selected date range is displayed prominently at the top of the Dashboard, showing both the period label and exact dates.
+</Tip>
+
+## Trend Chart
+
+The interactive trend chart visualizes your financial patterns over time:
+
+- **Line chart** showing income vs. expenses
+- **Color-coded lines**: Green for income, red for expenses
+- **Responsive design** adapts to all screen sizes
+- **Glassmorphism design** with gradient accents for modern aesthetics
+
+### Chart Features
+
+- Hover over data points to see exact values
+- Automatic scaling based on your data range
+- Dark mode compatible
+- Updates dynamically when you change the time period
+
+<img src="/images/screenshots/dashboard-chart-placeholder.png" alt="Dashboard Trend Chart" />
+<Note>Screenshot placeholder - shows income and expense trends over time</Note>
+
+## Transaction Table
+
+Below the chart, view a detailed table of all transactions:
+
+### Table Features
+
+- **Sortable columns**: Click any column header to sort
+- **Filtering**: Filter by transaction type (income/expense)
+- **Pagination**: Adjustable items per page (20, 50, 100, or 500)
+- **Color coding**: 
+  - Green rows for income transactions
+  - Red rows for expense transactions
+- **Grouping**: Transactions grouped by date period
+
+### Transaction Details
+
+Each transaction displays:
+
+- Date and time
+- Type (Income or Expense)
+- Category
+- Description
+- Payment method
+- Amount (formatted in MXN)
+
+### Sorting and Filtering
+
+1. **Sort**: Click column headers to toggle ascending/descending order
+2. **Filter by Type**: Use the filter buttons above the table:
+   - **Todos** (All): Show all transactions
+   - **Ingresos** (Income): Show only income
+   - **Gastos** (Expenses): Show only expenses
+
+3. **Pagination**: Navigate through pages or adjust items per page
+
+<Tip>
+The transaction count updates dynamically as you apply filters, helping you track exactly how many transactions match your criteria.
+</Tip>
+
+## User Workflow
+
+<Steps>
+  <Step title="Select Time Period">
+    Choose from Daily, Weekly, Monthly, or Custom date range to set your analysis scope
+  </Step>
+  
+  <Step title="Review KPIs">
+    Check the four key metrics at the top to understand your financial position at a glance
+  </Step>
+  
+  <Step title="Analyze Trends">
+    Use the trend chart to identify spending patterns and income fluctuations over time
+  </Step>
+  
+  <Step title="Drill Down">
+    Scroll to the transaction table to review individual transactions, sort by different criteria, or apply filters
+  </Step>
+  
+  <Step title="Adjust View">
+    Modify your time period or filters to explore different aspects of your financial data
+  </Step>
+</Steps>
+
+## Design Features
+
+### Visual Enhancements
+
+- **Gradient headers**: Emerald to cyan gradient for brand consistency
+- **Glassmorphism effects**: Frosted glass appearance with blur effects
+- **Animated elements**: Smooth transitions and hover effects
+- **Dark mode support**: Full theme compatibility
+
+### Responsive Design
+
+The Dashboard adapts seamlessly to different screen sizes:
+
+- **Desktop**: Full grid layout with 4 KPI cards across
+- **Tablet**: 2-column layout for KPIs
+- **Mobile**: Single column stack with optimized touch targets
+
+## Best Practices
+
+<Note>
+**Daily Check-In**: Start your day by reviewing the Dashboard to understand yesterday's financial activity and your current position.
+</Note>
+
+<Tip>
+**Use Custom Ranges**: When planning budgets or reviewing specific projects, use custom date ranges to isolate relevant time periods.
+</Tip>
+
+<Warning>
+The Dashboard processes recurring expenses automatically on load. This may take a few seconds if you have many recurring items due today.
+</Warning>
+
+## Related Features
+
+- [Manual Entry](/features/manual-entry) - Add individual transactions
+- [Recurring Expenses](/features/recurring-expenses) - Manage automatic expenses
+- [Reports](/features/reports) - Generate detailed financial reports

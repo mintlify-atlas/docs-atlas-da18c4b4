@@ -1,0 +1,287 @@
+---
+title: 'Chat Stream API'
+description: 'AI-powered conversational interface for registering transactions with streaming responses and function calling'
+api: 'POST /api/chat/stream'
+---
+
+## Overview
+
+The Chat Stream API provides a conversational AI interface powered by Google's Gemini 2.5 Flash model. It supports natural language processing for registering expenses and income, with Server-Sent Events (SSE) streaming and automatic database integration via function calling.
+
+## Authentication
+
+Requires Supabase authentication and a valid OpenRouter API key configured in environment variables.
+
+## Endpoint
+
+```
+POST /api/chat/stream
+```
+
+## Request Body
+
+<ParamField body="message" type="string" required>
+  The user's message in natural language.
+  
+  Example: "Gasté 450 pesos en gasolina"
+</ParamField>
+
+<ParamField body="messages" type="array" default="[]">
+  Conversation history (last 10 messages are used).
+  
+  Each message object contains:
+  - `role`: `"user"` or `"assistant"`
+  - `content`: Message text
+</ParamField>
+
+<ParamField body="images" type="array" default="[]">
+  Array of image URLs from uploaded receipts/tickets.
+  
+  Used for OCR-enhanced transaction registration.
+</ParamField>
+
+## Streaming Response
+
+The API returns Server-Sent Events (SSE) with `Content-Type: text/event-stream`. Each event is a JSON object:
+
+### Event Types
+
+<ResponseField name="thinking" type="boolean">
+  Indicates the AI is processing (thinking mode).
+  
+  - `true`: AI is analyzing the request
+  - `false`: AI has started generating response
+</ResponseField>
+
+<ResponseField name="chunk" type="string">
+  A piece of the streaming response text.
+  
+  Concatenate all chunks to build the complete message.
+</ResponseField>
+
+<ResponseField name="done" type="boolean">
+  Indicates the stream has completed.
+  
+  Always sent as the final event.
+</ResponseField>
+
+## AI Function Calling
+
+The AI can automatically execute functions to register transactions:
+
+### Available Functions
+
+#### `registrar_gasto`
+Registers an expense transaction.
+
+<ParamField body="monto" type="number" required>
+  Expense amount
+</ParamField>
+
+<ParamField body="categoria" type="string" required>
+  Category: `Alimentación`, `Transporte`, `Vivienda`, `Salud`, `Entretenimiento`, `Educación`, `Otros Gastos`
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  Optional description
+</ParamField>
+
+<ParamField body="metodo_pago" type="string" default="Efectivo">
+  Payment method: `Efectivo`, `Tarjeta`, `Transferencia`
+</ParamField>
+
+<ParamField body="registrado_por" type="string">
+  Name of person registering
+</ParamField>
+
+#### `registrar_ingreso`
+Registers an income transaction.
+
+<ParamField body="monto" type="number" required>
+  Income amount
+</ParamField>
+
+<ParamField body="categoria" type="string" required>
+  Category: `Salario`, `Ventas`, `Servicios`, `Inversiones`, `Otros Ingresos`
+</ParamField>
+
+<ParamField body="descripcion" type="string">
+  Optional description
+</ParamField>
+
+<ParamField body="metodo_pago" type="string" default="Efectivo">
+  Payment method: `Efectivo`, `Tarjeta`, `Transferencia`
+</ParamField>
+
+<ParamField body="registrado_por" type="string">
+  Name of person registering
+</ParamField>
+
+## Examples
+
+<CodeGroup>
+
+```javascript JavaScript (Fetch API)
+const response = await fetch('/api/chat/stream', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: 'Gasté 450 pesos en gasolina',
+    messages: [],
+    images: []
+  })
+});
+
+const reader = response.body.getReader();
+const decoder = new TextDecoder();
+
+while (true) {
+  const { done, value } = await reader.read();
+  if (done) break;
+  
+  const chunk = decoder.decode(value);
+  const lines = chunk.split('\n');
+  
+  for (const line of lines) {
+    if (line.startsWith('data: ')) {
+      const data = JSON.parse(line.slice(6));
+      
+      if (data.thinking) {
+        console.log('AI is thinking...');
+      } else if (data.chunk) {
+        console.log('Response:', data.chunk);
+      } else if (data.done) {
+        console.log('Stream complete');
+      }
+    }
+  }
+}
+```
+
+```python Python (requests)
+import requests
+import json
+
+response = requests.post(
+    'http://localhost:3000/api/chat/stream',
+    json={
+        'message': 'Registra un ingreso de 15000 pesos por salario',
+        'messages': [],
+        'images': []
+    },
+    stream=True
+)
+
+for line in response.iter_lines():
+    if line.startswith(b'data: '):
+        data = json.loads(line[6:])
+        
+        if data.get('chunk'):
+            print(data['chunk'], end='', flush=True)
+        elif data.get('done'):
+            print('\n[Stream complete]')
+```
+
+```bash cURL
+curl -X POST http://localhost:3000/api/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Compré despensa por 350 pesos en Walmart",
+    "messages": [],
+    "images": []
+  }' \
+  --no-buffer
+```
+
+</CodeGroup>
+
+## Stream Event Examples
+
+<CodeGroup>
+
+```json Thinking Event
+data: {"thinking": true}
+```
+
+```json Response Start
+data: {"thinking": false}
+```
+
+```json Content Chunk
+data: {"chunk": "Perfecto, voy a registrar ese gasto..."}
+```
+
+```json Function Execution
+data: {"chunk": "\n\n⏳ Registrando en base de datos..."}
+```
+
+```json Success Confirmation
+data: {"chunk": "\n\n✅ **Gasto registrado exitosamente!**\n\n💰 **Monto:** $450 MXN\n📁 **Categoría:** Transporte\n💳 **Método:** Efectivo\n👤 **Registrado por:** Usuario\n\n🎉 Puedes ver el resumen actualizado en el Dashboard."}
+```
+
+```json Stream Complete
+data: {"done": true}
+```
+
+</CodeGroup>
+
+## Workflow
+
+1. **Client sends message** with natural language input
+2. **AI processes** using Gemini 2.5 Flash with thinking mode (500 tokens)
+3. **Thinking indicator** sent to client (`thinking: true`)
+4. **AI analyzes** and determines if function calling is needed
+5. **Response streams** with `thinking: false` transition
+6. **Function execution** (if applicable):
+   - AI extracts transaction details
+   - Inserts into Supabase `transacciones` table
+   - Returns formatted confirmation
+7. **Stream completes** with `done: true`
+
+<Note>
+  The AI is trained to handle conversational inputs in Spanish and automatically categorize transactions according to the predefined category list.
+</Note>
+
+## Thinking Mode
+
+Gemini 2.5 Flash's thinking mode allocates up to 500 tokens for internal reasoning before generating the response. This improves:
+
+- Category selection accuracy
+- Amount extraction from natural language
+- Context understanding from conversation history
+
+## Error Handling
+
+<CodeGroup>
+
+```json OpenRouter Error
+data: {"chunk": "❌ Error al procesar. Intenta de nuevo.", "done": true}
+```
+
+```json Database Error
+data: {"chunk": "\n\n❌ Error al registrar: [error message]"}
+```
+
+```json Function Processing Error
+data: {"chunk": "\n\n❌ Error procesando función: [error message]"}
+```
+
+</CodeGroup>
+
+## Integration with Image Upload
+
+When images are provided:
+
+```javascript
+{
+  "message": "Aquí está el ticket",
+  "messages": [...],
+  "images": ["https://supabase.co/storage/v1/object/public/facturas/ticket_123.jpg"]
+}
+```
+
+The AI receives context: `"[El usuario subió 1 imagen(es) de tickets]\n\nAquí está el ticket"`
+
+This allows the AI to reference OCR data from the `/api/upload-image` endpoint.

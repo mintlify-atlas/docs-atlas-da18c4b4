@@ -1,0 +1,322 @@
+---
+title: 'Database Schema'
+description: 'Complete PostgreSQL database schema and table relationships'
+icon: 'database'
+---
+
+## Overview
+
+Sistema Financiero uses a single-table architecture powered by **Supabase (PostgreSQL)**. All financial transactions are stored in the `transacciones` table with Row Level Security (RLS) enabled for multi-tenant data isolation.
+
+## Complete SQL Schema
+
+### Main Table: `transacciones`
+
+The core table that stores all income and expense transactions:
+
+```sql
+-- Table: transacciones (Stores all income and expenses)
+CREATE TABLE transacciones (
+  -- Primary Key
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  -- Core Transaction Fields
+  fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+  tipo TEXT CHECK (tipo IN ('ingreso', 'gasto')) NOT NULL,
+  monto NUMERIC(10, 2) NOT NULL CHECK (monto > 0),
+  categoria TEXT NOT NULL,
+
+  -- Optional Details
+  concepto TEXT DEFAULT 'Transacción manual',
+  descripcion TEXT,
+  metodo_pago TEXT CHECK (metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia')),
+  registrado_por TEXT,
+  foto_url TEXT,
+
+  -- Metadata
+  usuario_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## Table Structure
+
+<Note>
+  The database uses a denormalized design for simplicity. Categories are **hardcoded in the application**, not stored as a separate table.
+</Note>
+
+### Column Reference
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID | PRIMARY KEY | Auto-generated unique identifier |
+| `fecha` | TIMESTAMP | NOT NULL | Transaction date/time |
+| `tipo` | TEXT | CHECK | Either `'ingreso'` or `'gasto'` |
+| `monto` | NUMERIC(10,2) | NOT NULL, > 0 | Transaction amount (positive) |
+| `categoria` | TEXT | NOT NULL | Category name (validated in app) |
+| `concepto` | TEXT | DEFAULT | Short transaction concept |
+| `descripcion` | TEXT | NULLABLE | Detailed description |
+| `metodo_pago` | TEXT | CHECK | Payment method |
+| `registrado_por` | TEXT | NULLABLE | User who registered it |
+| `foto_url` | TEXT | NULLABLE | URL to receipt/ticket image |
+| `usuario_id` | UUID | FOREIGN KEY | References auth.users(id) |
+| `created_at` | TIMESTAMP | DEFAULT | Record creation timestamp |
+
+## Indexes
+
+Optimized indexes for common query patterns:
+
+```sql
+-- Performance indexes
+CREATE INDEX idx_transacciones_fecha ON transacciones(fecha DESC);
+CREATE INDEX idx_transacciones_tipo ON transacciones(tipo);
+CREATE INDEX idx_transacciones_usuario ON transacciones(usuario_id);
+```
+
+<Steps>
+  <Step title="Date Index">
+    The `idx_transacciones_fecha` index enables fast date range queries for dashboard filters.
+  </Step>
+  <Step title="Type Index">
+    The `idx_transacciones_tipo` index speeds up filtering by income/expense type.
+  </Step>
+  <Step title="User Index">
+    The `idx_transacciones_usuario` index is critical for RLS policy enforcement.
+  </Step>
+</Steps>
+
+## Row Level Security (RLS)
+
+<Warning>
+  RLS policies are **mandatory** for multi-tenant security. Never disable RLS in production.
+</Warning>
+
+### Enable RLS
+
+```sql
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+```
+
+### Security Policies
+
+```sql
+-- Policy: Users can only see their own transactions
+CREATE POLICY "Users can view own transactions"
+  ON transacciones FOR SELECT
+  USING (auth.uid() = usuario_id);
+
+CREATE POLICY "Users can insert own transactions"
+  ON transacciones FOR INSERT
+  WITH CHECK (auth.uid() = usuario_id);
+```
+
+**How it works:**
+- `auth.uid()` returns the authenticated user's UUID
+- All SELECT queries automatically filter by `usuario_id`
+- Users cannot insert transactions for other users
+
+## Valid Categories (Application-Level)
+
+Categories are **not stored in a table**. They're hardcoded in the application:
+
+### Expense Categories
+
+```typescript
+const CATEGORIAS_GASTOS = [
+  'Alimentación',
+  'Transporte',
+  'Vivienda',
+  'Salud',
+  'Entretenimiento',
+  'Educación',
+  'Otros Gastos'
+]
+```
+
+### Income Categories
+
+```typescript
+const CATEGORIAS_INGRESOS = [
+  'Salario',
+  'Ventas',
+  'Servicios',
+  'Inversiones',
+  'Otros Ingresos'
+]
+```
+
+### Payment Methods
+
+```typescript
+const METODOS_PAGO = ['Efectivo', 'Tarjeta', 'Transferencia']
+```
+
+## Common Queries
+
+### Get All Transactions for Current User
+
+```typescript
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('*')
+  .order('fecha', { ascending: false })
+```
+
+<Note>
+  The RLS policy automatically filters by `usuario_id`, so you don't need to add that condition.
+</Note>
+
+### Get Transactions by Date Range
+
+```typescript
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('*')
+  .gte('fecha', '2024-01-01T00:00:00')
+  .lte('fecha', '2024-01-31T23:59:59')
+  .order('fecha', { ascending: false })
+```
+
+### Get Only Expenses
+
+```typescript
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('*')
+  .eq('tipo', 'gasto')
+  .order('fecha', { ascending: false })
+```
+
+### Calculate Total Income
+
+```typescript
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('monto')
+  .eq('tipo', 'ingreso')
+
+const totalIngresos = data?.reduce((sum, t) => sum + Number(t.monto), 0) || 0
+```
+
+### Insert New Transaction
+
+```typescript
+const { error } = await supabase
+  .from('transacciones')
+  .insert({
+    tipo: 'gasto',
+    monto: 450.50,
+    categoria: 'Transporte',
+    concepto: 'Gasolina',
+    descripcion: 'Llenado completo',
+    metodo_pago: 'Tarjeta',
+    registrado_por: 'Juan Pérez',
+    fecha: new Date().toISOString(),
+  })
+```
+
+<Note>
+  The `usuario_id` field is **automatically populated** by RLS policy using `auth.uid()` during INSERT.
+</Note>
+
+## Storage Bucket (Optional)
+
+### Bucket: `facturas`
+
+Stores receipt/ticket images uploaded via OCR feature.
+
+```sql
+-- Create storage bucket (run in Supabase Dashboard)
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('facturas', 'facturas', true);
+
+-- Allow authenticated users to upload
+CREATE POLICY "Users can upload receipts"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'facturas' AND auth.role() = 'authenticated');
+
+-- Allow public read access
+CREATE POLICY "Public read access"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'facturas');
+```
+
+## TypeScript Interfaces
+
+### Transaction Type
+
+```typescript
+interface Transaccion {
+  id: string
+  fecha: string
+  tipo: 'gasto' | 'ingreso'
+  categoria: string
+  monto: number
+  concepto: string
+  descripcion: string | null
+  metodo_pago: string
+  registrado_por: string | null
+  foto_url: string | null
+  usuario_id: string
+  created_at: string
+}
+```
+
+Location: `components/DataViews.tsx:8-17`
+
+## Migration Scripts
+
+### Adding a New Column
+
+```sql
+-- 1. Add column to table
+ALTER TABLE transacciones ADD COLUMN tags TEXT[];
+
+-- 2. Set default for existing rows
+UPDATE transacciones SET tags = ARRAY[]::TEXT[] WHERE tags IS NULL;
+
+-- 3. Update TypeScript interface
+-- File: components/DataViews.tsx
+interface Transaccion {
+  // ... existing fields
+  tags: string[] | null
+}
+```
+
+### Backing Up Data
+
+```bash
+# Export via Supabase CLI
+supabase db dump -f backup.sql
+
+# Restore
+supabase db push --file backup.sql
+```
+
+## Performance Tips
+
+<Steps>
+  <Step title="Limit Results">
+    Always use `.limit()` for large datasets:
+    ```typescript
+    .select('*').limit(500)
+    ```
+  </Step>
+  <Step title="Use Indexes">
+    Ensure queries use indexed columns (`fecha`, `tipo`, `usuario_id`).
+  </Step>
+  <Step title="Avoid N+1 Queries">
+    Fetch all data in a single query, then process in JavaScript.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Adding Features" icon="plus" href="/development/adding-features">
+    Learn how to add new features to the codebase
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/development/troubleshooting">
+    Common database issues and solutions
+  </Card>
+</CardGroup>

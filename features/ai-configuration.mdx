@@ -1,0 +1,489 @@
+---
+title: AI Configuration
+description: Set up and customize AI features in Sistema Financiero
+icon: gear
+---
+
+## Overview
+
+Sistema Financiero uses [OpenRouter](https://openrouter.ai/) to provide AI-powered features like natural language transaction entry and OCR receipt scanning. This guide will help you configure the necessary API keys and customize AI settings.
+
+<Note>
+  OpenRouter provides access to multiple AI models through a single API, including Google's Gemini, OpenAI's GPT, and many others.
+</Note>
+
+## Quick Setup
+
+<Steps>
+  <Step title="Get OpenRouter API Key">
+    1. Go to [openrouter.ai](https://openrouter.ai/)
+    2. Sign up or log in
+    3. Navigate to [API Keys](https://openrouter.ai/keys)
+    4. Click "Create Key"
+    5. Copy your API key (starts with `sk-or-v1-...`)
+  </Step>
+  
+  <Step title="Add to Environment Variables">
+    Create or edit `.env.local` in your project root:
+    
+    ```bash
+    OPENROUTER_API_KEY=sk-or-v1-your-key-here
+    ```
+  </Step>
+  
+  <Step title="Restart Development Server">
+    ```bash
+    npm run dev
+    ```
+    
+    AI features are now active!
+  </Step>
+</Steps>
+
+## Environment Variables
+
+Sistema Financiero requires these environment variables for AI features:
+
+### Required
+
+```bash
+# OpenRouter API Key (required for AI features)
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+### Optional
+
+```bash
+# Your app URL (for OpenRouter analytics)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Supabase (required for data storage)
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-key
+```
+
+See `.env.example` in the repository for the complete template.
+
+## Model Configuration
+
+Sistema Financiero currently uses **Google Gemini 2.5 Flash** for both chat and OCR features.
+
+### Current Model
+
+```typescript
+model: 'google/gemini-2.5-flash'
+```
+
+**Why Gemini 2.5 Flash?**
+- Fast response times (< 2 seconds)
+- Strong function calling support
+- Excellent vision/OCR capabilities
+- Cost-effective pricing
+- Native Spanish language support
+
+### Supported Features
+
+| Feature | Model Used | Capabilities |
+|---------|------------|-------------|
+| AI Chat | Gemini 2.5 Flash | Function calling, conversation history |
+| OCR Scanning | Gemini 2.5 Flash | Vision, JSON mode, text extraction |
+
+### Customizing the Model
+
+You can switch to different models by editing the API routes:
+
+#### Chat Model
+
+Edit `/app/api/chat/route.ts:86`:
+
+```typescript
+body: JSON.stringify({
+  model: 'google/gemini-2.5-flash', // Change this
+  messages: openRouterMessages,
+  // ...
+})
+```
+
+#### OCR Model
+
+Edit `/app/api/upload-image/route.ts:49`:
+
+```typescript
+body: JSON.stringify({
+  model: 'google/gemini-2.5-flash', // Change this
+  messages: [...],
+  // ...
+})
+```
+
+<Warning>
+  Not all models support function calling or vision. Ensure your chosen model supports the required features:
+  - **Chat:** Must support function calling
+  - **OCR:** Must support vision and JSON output mode
+</Warning>
+
+## Alternative Models
+
+Here are some alternative models available on OpenRouter:
+
+### For Chat (Function Calling)
+
+```typescript
+// OpenAI GPT-4 Turbo
+model: 'openai/gpt-4-turbo'
+
+// OpenAI GPT-3.5 Turbo (cheaper)
+model: 'openai/gpt-3.5-turbo'
+
+// Google Gemini Pro
+model: 'google/gemini-pro'
+
+// Anthropic Claude 3.5 Sonnet
+model: 'anthropic/claude-3.5-sonnet'
+```
+
+### For OCR (Vision)
+
+```typescript
+// OpenAI GPT-4 Vision
+model: 'openai/gpt-4-vision-preview'
+
+// Google Gemini Pro Vision
+model: 'google/gemini-pro-vision'
+
+// Anthropic Claude 3 Opus (best quality)
+model: 'anthropic/claude-3-opus'
+```
+
+<Tip>
+  Check [OpenRouter Models](https://openrouter.ai/models) for the full list of available models, pricing, and capabilities.
+</Tip>
+
+## API Configuration
+
+### Headers
+
+All OpenRouter requests include these headers:
+
+```typescript
+headers: {
+  'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+  'Content-Type': 'application/json',
+  'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+  'X-Title': 'Sistema Financiero'
+}
+```
+
+- **Authorization:** Your API key
+- **HTTP-Referer:** Your site URL (for analytics)
+- **X-Title:** App name (appears in OpenRouter dashboard)
+
+### Chat Parameters
+
+```typescript
+{
+  model: 'google/gemini-2.5-flash',
+  messages: [...],
+  max_tokens: 1000,
+  temperature: 0.7,
+  tools: [...],          // Function definitions
+  tool_choice: 'auto'    // Let AI decide when to call functions
+}
+```
+
+See `/app/api/chat/route.ts:84-162`
+
+### OCR Parameters
+
+```typescript
+{
+  model: 'google/gemini-2.5-flash',
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: '...' },
+        { type: 'image_url', image_url: { url: imageUrl } }
+      ]
+    }
+  ],
+  max_tokens: 400,
+  temperature: 0.1,      // Lower temp for consistent extraction
+  response_format: { type: 'json_object' }
+}
+```
+
+See `/app/api/upload-image/route.ts:48-128`
+
+## Parameter Tuning
+
+### Temperature
+
+- **Chat:** `0.7` - More creative, conversational responses
+- **OCR:** `0.1` - More deterministic, accurate data extraction
+
+```typescript
+// More creative (0.8-1.0)
+temperature: 0.9
+
+// Balanced (0.5-0.7)
+temperature: 0.7
+
+// More deterministic (0.0-0.3)
+temperature: 0.1
+```
+
+### Max Tokens
+
+- **Chat:** `1000` - Enough for conversation + function call
+- **OCR:** `400` - Sufficient for structured JSON response
+
+```typescript
+// Short responses
+max_tokens: 200
+
+// Medium responses
+max_tokens: 500
+
+// Long responses
+max_tokens: 2000
+```
+
+<Warning>
+  Higher max_tokens = higher costs. Adjust based on your needs and budget.
+</Warning>
+
+## Cost Optimization
+
+### Strategies
+
+1. **Use cheaper models for simple tasks:**
+   - Consider GPT-3.5 Turbo instead of GPT-4 for basic chat
+   - Gemini 2.5 Flash is already cost-effective
+
+2. **Limit conversation history:**
+   ```typescript
+   messages.slice(-10) // Only keep last 10 messages
+   ```
+
+3. **Reduce max_tokens:**
+   - Set lower limits when possible
+   - OCR responses don't need many tokens
+
+4. **Monitor usage:**
+   - Check OpenRouter dashboard for usage analytics
+   - Track `data.usage` returned in API responses
+
+### Usage Tracking
+
+The chat API returns usage information:
+
+```typescript
+return NextResponse.json({
+  response: assistantResponse,
+  usage: data.usage,    // Token counts
+  model: data.model     // Model used
+})
+```
+
+Example usage object:
+```json
+{
+  "prompt_tokens": 245,
+  "completion_tokens": 89,
+  "total_tokens": 334
+}
+```
+
+## Security Best Practices
+
+<Warning>
+  Never commit API keys to version control. Always use environment variables.
+</Warning>
+
+### Environment File Security
+
+1. **Add to `.gitignore`:**
+   ```
+   .env
+   .env.local
+   .env*.local
+   ```
+
+2. **Use `.env.example` template:**
+   ```bash
+   # .env.example (safe to commit)
+   OPENROUTER_API_KEY=
+   ```
+
+3. **Production deployment:**
+   - Use platform's secret management (Vercel, Railway, etc.)
+   - Never expose keys in client-side code
+
+### API Key Permissions
+
+OpenRouter allows you to set spending limits:
+
+1. Go to [OpenRouter Settings](https://openrouter.ai/settings)
+2. Set monthly spending limits
+3. Enable usage notifications
+4. Monitor usage regularly
+
+## Vercel Deployment
+
+To deploy to Vercel with AI features:
+
+<Steps>
+  <Step title="Add environment variables">
+    In your Vercel project settings:
+    1. Go to Settings → Environment Variables
+    2. Add `OPENROUTER_API_KEY`
+    3. Add other required variables
+  </Step>
+  
+  <Step title="Deploy">
+    ```bash
+    vercel --prod
+    ```
+  </Step>
+  
+  <Step title="Verify">
+    Test AI features on your production URL
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### "OpenRouter error: 401 Unauthorized"
+
+**Cause:** Invalid or missing API key
+
+**Solution:**
+1. Check `.env.local` has correct key
+2. Verify key starts with `sk-or-v1-`
+3. Restart dev server after adding key
+
+### "Error al procesar tu mensaje"
+
+**Cause:** API request failed
+
+**Solution:**
+1. Check OpenRouter dashboard for errors
+2. Verify you have sufficient credits
+3. Check network connectivity
+
+### "Function calling not working"
+
+**Cause:** Model doesn't support function calling
+
+**Solution:**
+1. Ensure using compatible model (Gemini, GPT-4, Claude 3)
+2. Check `tools` parameter is correctly formatted
+3. Verify `tool_choice: 'auto'` is set
+
+### "OCR extraction inaccurate"
+
+**Cause:** Poor image quality or wrong model
+
+**Solution:**
+1. Use vision-capable model
+2. Improve image quality (lighting, focus)
+3. Lower temperature for more consistent results
+4. Adjust OCR prompt for better extraction
+
+## Advanced Configuration
+
+### Custom System Prompts
+
+Modify the system prompt in `/app/api/chat/route.ts:33-57`:
+
+```typescript
+const systemPrompt = `Eres un asistente financiero personal...
+
+// Add your custom instructions here
+`
+```
+
+### Custom Function Definitions
+
+Add new functions in `/app/api/chat/route.ts:89-159`:
+
+```typescript
+tools: [
+  {
+    type: 'function',
+    function: {
+      name: 'your_custom_function',
+      description: 'What it does',
+      parameters: {
+        type: 'object',
+        properties: {
+          // Define parameters
+        },
+        required: ['param1', 'param2']
+      }
+    }
+  },
+  // ... existing functions
+]
+```
+
+### Streaming Responses
+
+For real-time streaming, there's also a streaming endpoint:
+
+```typescript
+// Available at /app/api/chat/stream/route.ts
+POST /api/chat/stream
+```
+
+Implements Server-Sent Events (SSE) for streaming AI responses.
+
+## Monitoring
+
+### OpenRouter Dashboard
+
+Monitor your usage at [openrouter.ai/activity](https://openrouter.ai/activity):
+- Request count
+- Token usage
+- Cost breakdown
+- Model performance
+
+### Logs
+
+Check server logs for errors:
+
+```typescript
+// Logged errors include:
+console.error('Chat API error:', error)
+console.error('Upload/OCR error:', error)
+console.error('Vision API error:', errorText)
+```
+
+## Resources
+
+<CardGroup cols={2}>
+  <Card title="OpenRouter Docs" icon="book" href="https://openrouter.ai/docs">
+    Official API documentation
+  </Card>
+  <Card title="Model List" icon="list" href="https://openrouter.ai/models">
+    Browse available models and pricing
+  </Card>
+  <Card title="API Keys" icon="key" href="https://openrouter.ai/keys">
+    Manage your API keys
+  </Card>
+  <Card title="Usage Dashboard" icon="chart-line" href="https://openrouter.ai/activity">
+    Monitor API usage and costs
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Chat" icon="messages" href="/features/ai-chat">
+    Learn how to use the AI chat assistant
+  </Card>
+  <Card title="OCR Scanning" icon="camera" href="/features/ocr-scanning">
+    Upload receipts for automatic data extraction
+  </Card>
+</CardGroup>

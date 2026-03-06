@@ -1,0 +1,176 @@
+---
+title: 'Transactions API'
+description: 'Retrieve and filter financial transactions with flexible date range options'
+api: 'GET /api/transacciones'
+---
+
+## Overview
+
+The Transactions API allows you to retrieve financial transactions (both expenses and income) with support for multiple view modes and custom date ranges.
+
+## Authentication
+
+This endpoint uses Supabase authentication. Ensure your requests include valid authentication headers.
+
+## Endpoint
+
+```
+GET /api/transacciones
+```
+
+## Query Parameters
+
+<ParamField query="vista" type="string" default="mensual">
+  View mode for filtering transactions. Available options:
+  - `diaria`: Last 7 days
+  - `semanal`: Last 4 weeks (28 days)
+  - `mensual`: Last 12 months
+  - `personalizada`: Custom date range (requires `fecha_inicio` and `fecha_fin`)
+</ParamField>
+
+<ParamField query="fecha_inicio" type="string">
+  Start date for custom range in `YYYY-MM-DD` format.
+  
+  **Required when:** `vista=personalizada`
+  
+  Example: `2024-01-01`
+</ParamField>
+
+<ParamField query="fecha_fin" type="string">
+  End date for custom range in `YYYY-MM-DD` format.
+  
+  **Required when:** `vista=personalizada`
+  
+  Example: `2024-12-31`
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="array">
+  Array of transaction objects, ordered by date (most recent first). Limited to 500 results.
+  
+  <ResponseField name="id" type="string">
+    Unique transaction identifier
+  </ResponseField>
+  
+  <ResponseField name="tipo" type="string">
+    Transaction type: `gasto` (expense) or `ingreso` (income)
+  </ResponseField>
+  
+  <ResponseField name="monto" type="number">
+    Transaction amount in MXN
+  </ResponseField>
+  
+  <ResponseField name="categoria" type="string">
+    Transaction category:
+    - **Expenses:** Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Otros Gastos
+    - **Income:** Salario, Ventas, Servicios, Inversiones, Otros Ingresos
+  </ResponseField>
+  
+  <ResponseField name="concepto" type="string">
+    Brief transaction description
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string" optional>
+    Detailed description
+  </ResponseField>
+  
+  <ResponseField name="metodo_pago" type="string">
+    Payment method: `Efectivo`, `Tarjeta`, or `Transferencia`
+  </ResponseField>
+  
+  <ResponseField name="registrado_por" type="string">
+    User who registered the transaction
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string">
+    Transaction date in ISO 8601 format
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="vista" type="string">
+  The view mode used for filtering
+</ResponseField>
+
+## Examples
+
+<CodeGroup>
+
+```javascript JavaScript
+const response = await fetch('/api/transacciones?vista=mensual');
+const { data, vista } = await response.json();
+
+console.log(`Retrieved ${data.length} transactions using ${vista} view`);
+```
+
+```python Python
+import requests
+
+response = requests.get('http://localhost:3000/api/transacciones', params={
+    'vista': 'personalizada',
+    'fecha_inicio': '2024-01-01',
+    'fecha_fin': '2024-03-31'
+})
+
+data = response.json()
+print(f"Found {len(data['data'])} transactions")
+```
+
+```bash cURL
+curl "http://localhost:3000/api/transacciones?vista=semanal"
+```
+
+</CodeGroup>
+
+## Response Examples
+
+<CodeGroup>
+
+```json Success Response
+{
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "tipo": "gasto",
+      "monto": 450.50,
+      "categoria": "Transporte",
+      "concepto": "Gasolina",
+      "descripcion": "Llenado de combustible",
+      "metodo_pago": "Tarjeta",
+      "registrado_por": "Usuario",
+      "fecha": "2024-03-06T15:30:00Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "tipo": "ingreso",
+      "monto": 15000.00,
+      "categoria": "Salario",
+      "concepto": "Pago quincenal",
+      "descripcion": null,
+      "metodo_pago": "Transferencia",
+      "registrado_por": "Usuario",
+      "fecha": "2024-03-01T08:00:00Z"
+    }
+  ],
+  "vista": "mensual"
+}
+```
+
+```json Error Response
+{
+  "error": "Error message describing what went wrong"
+}
+```
+
+</CodeGroup>
+
+<Note>
+  All transactions are automatically ordered by date in descending order (most recent first). The API limits results to 500 transactions per request.
+</Note>
+
+## Use Cases
+
+- **Dashboard Overview:** Fetch recent transactions using `vista=mensual`
+- **Weekly Reports:** Get last 4 weeks of activity with `vista=semanal`
+- **Custom Analysis:** Analyze specific periods using `vista=personalizada`
+- **Daily Tracking:** Monitor recent activity with `vista=diaria`

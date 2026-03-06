@@ -1,0 +1,267 @@
+---
+title: 'Installation'
+description: 'Install Sistema Financiero and set up your development environment'
+icon: 'download'
+---
+
+## Prerequisites
+
+Before installing Sistema Financiero, ensure you have the following prerequisites installed on your system:
+
+<CardGroup cols={2}>
+  <Card title="Node.js 20+" icon="node-js">
+    Download from [nodejs.org](https://nodejs.org/)
+  </Card>
+  <Card title="npm or yarn" icon="box">
+    Included with Node.js installation
+  </Card>
+  <Card title="Git" icon="git">
+    For cloning the repository
+  </Card>
+  <Card title="Code Editor" icon="code">
+    VS Code, WebStorm, or your preferred editor
+  </Card>
+</CardGroup>
+
+### Verify Node.js Installation
+
+Check that Node.js and npm are installed correctly:
+
+```bash Terminal
+node --version
+# Should output v20.x.x or higher
+
+npm --version
+# Should output 10.x.x or higher
+```
+
+<Note>
+  Sistema Financiero requires **Node.js 20 or higher** due to Next.js 15 dependencies.
+</Note>
+
+## Installation Steps
+
+<Steps>
+  <Step title="Clone the Repository">
+    Clone the Sistema Financiero repository from GitHub:
+
+    ```bash Terminal
+    git clone https://github.com/danielcarreon/sistema-financiero-app.git
+    cd sistema-financiero-app
+    ```
+
+    <Info>
+      If you prefer SSH, use: `git clone git@github.com:danielcarreon/sistema-financiero-app.git`
+    </Info>
+  </Step>
+
+  <Step title="Install Dependencies">
+    Install all required npm packages:
+
+    ```bash Terminal
+    npm install
+    ```
+
+    This will install all dependencies defined in `package.json`, including:
+    - Next.js 15.5.4 (React framework)
+    - Supabase client libraries
+    - Chart.js for data visualization
+    - Tailwind CSS 4 for styling
+    - TypeScript 5 for type safety
+
+    <Note>
+      Installation typically takes 2-5 minutes depending on your internet connection.
+    </Note>
+  </Step>
+
+  <Step title="Verify Installation">
+    Confirm that all dependencies were installed successfully:
+
+    ```bash Terminal
+    npm list --depth=0
+    ```
+
+    You should see output listing all installed packages without errors.
+  </Step>
+</Steps>
+
+## Dependency Overview
+
+Sistema Financiero uses the following key dependencies:
+
+### Core Framework
+
+| Package | Version | Purpose |
+|---------|---------|----------|
+| `next` | 15.5.4 | React framework with App Router and API routes |
+| `react` | 19.1.0 | UI library for building components |
+| `react-dom` | 19.1.0 | React rendering for web |
+| `typescript` | ^5 | Type-safe JavaScript |
+
+### Backend & Database
+
+| Package | Version | Purpose |
+|---------|---------|----------|
+| `@supabase/supabase-js` | ^2.58.0 | PostgreSQL database client |
+
+### UI & Styling
+
+| Package | Version | Purpose |
+|---------|---------|----------|
+| `tailwindcss` | ^4 | Utility-first CSS framework |
+| `@tailwindcss/typography` | ^0.5.19 | Typography plugin for Tailwind |
+| `next-themes` | ^0.4.6 | Dark mode support |
+| `lucide-react` | ^0.544.0 | Icon library |
+
+### Data Visualization
+
+| Package | Version | Purpose |
+|---------|---------|----------|
+| `chart.js` | ^4.5.0 | Charting library |
+| `react-chartjs-2` | ^5.3.0 | React wrapper for Chart.js |
+
+### Content & Markdown
+
+| Package | Version | Purpose |
+|---------|---------|----------|
+| `react-markdown` | ^10.1.0 | Markdown rendering |
+| `remark-gfm` | ^4.0.1 | GitHub Flavored Markdown support |
+| `mermaid` | ^11.12.0 | Diagram and flowchart rendering |
+
+<Tip>
+  All dependencies are production-ready and actively maintained. Check the [GitHub repository](https://github.com/danielcarreon/sistema-financiero-app) for the latest versions.
+</Tip>
+
+## Project Structure
+
+After installation, your project structure will look like this:
+
+```
+sistema-financiero-app/
+├── app/                          # Next.js App Router
+│   ├── page.tsx                 # Dashboard (home page)
+│   ├── registro/page.tsx        # Manual transaction form
+│   ├── agente-mejorado/page.tsx # AI chat interface
+│   ├── corte-diario/page.tsx    # Daily cut/bulk entry
+│   └── api/                     # Backend API routes
+│       ├── transacciones/       # Transaction CRUD
+│       ├── chat/stream/         # AI chat streaming
+│       ├── upload-image/        # OCR for receipts
+│       └── auth/                # Authentication
+│
+├── components/                   # React components
+│   ├── Header.tsx               # Navigation bar
+│   ├── KPICard.tsx              # Metric cards
+│   ├── TrendChart.tsx           # Line charts
+│   └── DataViews.tsx            # Transaction table
+│
+├── hooks/                        # Custom React hooks
+│   ├── useEnhancedChat.ts       # Chat state management
+│   └── useImageUpload.ts        # Image upload logic
+│
+├── lib/                          # Utilities
+│   └── supabase.ts              # Supabase client
+│
+├── .env.example                  # Environment variables template
+├── package.json                  # Dependencies
+├── tsconfig.json                 # TypeScript configuration
+└── tailwind.config.ts            # Tailwind CSS config
+```
+
+## Development Scripts
+
+After installation, you can use these npm scripts:
+
+<CodeGroup>
+
+```bash Development Server
+npm run dev
+# Starts Next.js development server on http://localhost:3000
+# Includes hot-reload and fast refresh
+```
+
+```bash Production Build
+npm run build
+# Creates optimized production build
+# Outputs to .next/ directory
+```
+
+```bash Production Server
+npm run start
+# Runs production build locally
+# Requires 'npm run build' first
+```
+
+</CodeGroup>
+
+<Warning>
+  Do not run `npm run start` without first running `npm run build`. The production server requires a built application.
+</Warning>
+
+## Troubleshooting
+
+### Common Installation Issues
+
+<AccordionGroup>
+  <Accordion title="Error: Node version too old">
+    **Problem:** `The engine "node" is incompatible with this module.`
+    
+    **Solution:** Upgrade to Node.js 20 or higher:
+    ```bash
+    # Using nvm (Node Version Manager)
+    nvm install 20
+    nvm use 20
+    
+    # Or download from nodejs.org
+    ```
+  </Accordion>
+
+  <Accordion title="Error: npm install fails with EACCES">
+    **Problem:** Permission denied when installing packages globally.
+    
+    **Solution:** Fix npm permissions or use a Node version manager:
+    ```bash
+    # Option 1: Use npx instead of global install
+    npx <package-name>
+    
+    # Option 2: Fix npm permissions
+    mkdir ~/.npm-global
+    npm config set prefix '~/.npm-global'
+    echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
+    source ~/.bashrc
+    ```
+  </Accordion>
+
+  <Accordion title="Error: Module not found after installation">
+    **Problem:** TypeScript can't find installed modules.
+    
+    **Solution:** Clear cache and reinstall:
+    ```bash
+    rm -rf node_modules package-lock.json
+    npm cache clean --force
+    npm install
+    ```
+  </Accordion>
+
+  <Accordion title="Slow installation on Windows">
+    **Problem:** npm install takes 10+ minutes.
+    
+    **Solution:** Disable Windows Defender real-time scanning for node_modules:
+    1. Open Windows Security
+    2. Go to Virus & threat protection settings
+    3. Add exclusion for your project's `node_modules` folder
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+Now that you've installed Sistema Financiero, proceed to:
+
+<CardGroup cols={2}>
+  <Card title="Supabase Configuration" icon="database" href="/setup/supabase-configuration">
+    Set up your PostgreSQL database
+  </Card>
+  <Card title="Environment Variables" icon="key" href="/setup/environment-variables">
+    Configure your environment secrets
+  </Card>
+</CardGroup>

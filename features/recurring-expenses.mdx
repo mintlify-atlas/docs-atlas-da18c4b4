@@ -1,0 +1,301 @@
+---
+title: 'Recurring Expenses'
+description: 'Automate tracking of subscription services and regular monthly expenses with intelligent scheduling'
+icon: 'rotate'
+---
+
+Recurring Expenses automatically track and record expenses that occur on the same day each month, such as subscriptions, rent, utilities, and other predictable charges.
+
+## Overview
+
+Never forget a subscription payment or regular expense again. The Recurring Expenses feature automatically creates transaction entries on the specified day of each month, ensuring your financial records are always complete.
+
+<Note>
+Recurring expenses are processed automatically every time the Dashboard loads, making your financial data always up-to-date.
+</Note>
+
+## How It Works
+
+### Automatic Processing
+
+The system checks for recurring expenses daily:
+
+1. **On Dashboard Load**: When you open the Dashboard, the system checks if today matches any recurring expense days
+2. **Day Matching**: If today's date matches a configured day (e.g., the 15th), the expense is processed
+3. **Transaction Creation**: A new transaction entry is automatically created with all configured details
+4. **Last Execution Tracking**: The system records when each expense was last processed to prevent duplicates
+
+<Steps>
+  <Step title="System Checks Date">
+    Each day, the system compares the current date with all active recurring expenses
+  </Step>
+  
+  <Step title="Matches Found">
+    When today's day number matches a recurring expense day, it's flagged for processing
+  </Step>
+  
+  <Step title="Duplicate Prevention">
+    The system checks the `ultima_ejecucion` (last execution) date to ensure it hasn't already been processed today
+  </Step>
+  
+  <Step title="Transaction Created">
+    A new expense transaction is created with:
+    - Type: "gasto" (expense)
+    - Category, amount, and payment method from the recurring expense
+    - Today's date and time
+    - Description indicating it's from a recurring expense
+  </Step>
+  
+  <Step title="Confirmation">
+    The console logs the number of processed expenses (visible in browser developer tools)
+  </Step>
+</Steps>
+
+## Managing Recurring Expenses
+
+### Creating a New Recurring Expense
+
+<Steps>
+  <Step title="Navigate to Page">
+    Click "Gastos Recurrentes" in the main navigation
+  </Step>
+  
+  <Step title="Click Add Button">
+    Click the "Añadir Gasto Recurrente" button at the top
+  </Step>
+  
+  <Step title="Fill Required Fields">
+    Enter the expense details:
+    
+    **Required Fields:**
+    - **Nombre**: Descriptive name (e.g., "Netflix Premium")
+    - **Día de Cobro**: Day of month (1-31) when charged
+    - **Monto**: Amount in Mexican Pesos
+    
+    **Optional Fields:**
+    - **Categoría**: Select from expense categories (default: Suscripciones)
+    - **Método de Pago**: Cash, Card, or Transfer (default: Tarjeta)
+    - **Cuenta**: Bank account or card name (optional)
+  </Step>
+  
+  <Step title="Set Active Status">
+    Check the "Activo" box to enable automatic processing
+  </Step>
+  
+  <Step title="Save">
+    Click "Crear Gasto" to save
+  </Step>
+</Steps>
+
+### Editing an Existing Expense
+
+1. Find the expense in the table
+2. Click the edit icon (pencil) in the Actions column
+3. Modify any fields in the form
+4. Click "Actualizar" to save changes
+
+### Deactivating an Expense
+
+To temporarily stop an expense without deleting it:
+
+1. Click the edit icon
+2. Uncheck the "Activo" checkbox
+3. Save the changes
+
+<Tip>
+Deactivating is better than deleting if you might reactivate the subscription later. Your historical data is preserved.
+</Tip>
+
+### Deleting an Expense
+
+1. Click the delete icon (trash) in the Actions column
+2. Confirm the deletion in the popup dialog
+3. The expense is permanently removed
+
+<Warning>
+Deleting a recurring expense does NOT delete the transactions it already created. It only stops future automatic entries.
+</Warning>
+
+## Dashboard KPIs
+
+The Recurring Expenses page displays three key metrics:
+
+<CardGroup cols={3}>
+  <Card title="Total Activos" icon="dollar-sign" color="#10b981">
+    Sum of all active recurring expenses per month
+  </Card>
+  <Card title="Gastos Activos" icon="check-circle" color="#22c55e">
+    Number of active recurring expenses out of total
+  </Card>
+  <Card title="Próximo Cobro" icon="calendar" color="#3b82f6">
+    Next upcoming charge date based on active expenses
+  </Card>
+</CardGroup>
+
+## Expense Table
+
+The table displays all recurring expenses with:
+
+### Columns
+
+- **Nombre**: Expense name/description
+- **Día Cobro**: Day of month when charged
+- **Monto**: Amount in MXN (displayed in red with minus sign)
+- **Categoría**: Assigned category
+- **Estado**: Active or Inactive status badge
+- **Cuenta**: Associated account/card
+- **Acciones**: Edit and Delete buttons
+
+### Visual Indicators
+
+- **Active expenses**: Full opacity, green "Activo" badge
+- **Inactive expenses**: Reduced opacity (50%), gray "Inactivo" badge
+- **Color coding**: All amounts shown in red to indicate outgoing money
+
+## Common Use Cases
+
+### Subscriptions
+
+<Card title="Streaming Services" icon="tv">
+  Set up Netflix, Spotify, Disney+, etc. with their monthly charge dates
+</Card>
+
+<Card title="Software & SaaS" icon="laptop">
+  Track Adobe Creative Cloud, Microsoft 365, domain renewals, hosting fees
+</Card>
+
+### Regular Bills
+
+<Card title="Utilities" icon="bolt">
+  Electricity, water, gas bills that come on the same day each month
+</Card>
+
+<Card title="Rent & Mortgage" icon="house">
+  Monthly housing payments
+</Card>
+
+### Memberships
+
+<Card title="Gym & Fitness" icon="dumbbell">
+  Gym memberships, fitness class subscriptions
+</Card>
+
+<Card title="Professional Associations" icon="briefcase">
+  Professional organization dues, club memberships
+</Card>
+
+## Configuration Details
+
+### Day of Month Logic
+
+The system uses the day number (1-31) for matching:
+
+- **Day 1-28**: Works for all months
+- **Day 29-31**: For months with fewer days, the expense processes on the last day of that month
+
+<Note>
+If you set an expense for day 31, it will process on February 28 (or 29 in leap years), as those months don't have a 31st day.
+</Note>
+
+### Payment Methods
+
+Three options available:
+
+- **Efectivo**: For cash expenses (less common for recurring)
+- **Tarjeta**: Credit or debit card payments (most common)
+- **Transferencia**: Bank transfers and automatic ACH payments
+
+### Categories
+
+All expense categories are available:
+
+- **Suscripciones**: Default for most recurring expenses
+- **Alimentación**: Meal subscriptions, food delivery memberships
+- **Transporte**: Transit passes, car lease payments
+- **Vivienda**: Rent, mortgage, utilities
+- **Salud**: Health insurance, gym memberships
+- **Entretenimiento**: Streaming, gaming subscriptions
+- **Educación**: Online courses, educational platforms
+- **Otros Gastos**: Anything not fitting other categories
+
+## Technical Details
+
+### Processing Endpoint
+
+```javascript
+POST /api/gastos-recurrentes/procesar
+```
+
+This endpoint:
+- Fetches all active recurring expenses
+- Checks if today matches the configured day
+- Verifies the expense hasn't been processed today
+- Creates a transaction entry
+- Updates the `ultima_ejecucion` timestamp
+
+### Database Fields
+
+Each recurring expense stores:
+
+- `id`: Unique identifier
+- `nombre`: Display name
+- `dia_cobro`: Day of month (1-31)
+- `monto`: Amount (decimal)
+- `activo`: Boolean active status
+- `categoria`: Category name
+- `metodo_pago`: Payment method
+- `cuenta`: Optional account name
+- `ultima_ejecucion`: Timestamp of last processing
+
+## Best Practices
+
+<Tip>
+**Regular Review**: Review your recurring expenses monthly to:
+- Remove cancelled subscriptions
+- Update amounts if prices changed
+- Add new subscriptions as you sign up
+</Tip>
+
+<Tip>
+**Descriptive Names**: Use clear, specific names like "Netflix Premium Plan" instead of just "Netflix" to distinguish between services.
+</Tip>
+
+<Tip>
+**Account Tracking**: Fill in the "Cuenta" field to track which card or account is charged, helping with reconciliation.
+</Tip>
+
+<Warning>
+**Important**: The system processes recurring expenses based on your local date. If you're traveling across time zones, be aware the processing happens based on the server's date.
+</Warning>
+
+## Troubleshooting
+
+### Expense Not Processing Automatically
+
+1. **Check Active Status**: Ensure the "Activo" checkbox is enabled
+2. **Verify Day**: Confirm today matches the configured day
+3. **Check Last Execution**: Look at when it last processed - it won't process twice in one day
+4. **Open Dashboard**: Processing happens on Dashboard load, so visit the Dashboard
+
+### Duplicate Entries
+
+If you see duplicate recurring expense entries:
+
+1. The system should prevent this automatically
+2. Check the `ultima_ejecucion` date in the database
+3. Contact support if duplicates persist
+
+### Missing Transactions
+
+If an expense should have processed but didn't:
+
+1. Verify the recurring expense exists and is active
+2. Check the day of month is correct
+3. Review the Dashboard console logs for processing messages
+4. Manually create the transaction if needed
+
+## Related Features
+
+- [Dashboard](/features/dashboard) - View automatically created transactions
+- [Manual Entry](/features/manual-entry) - Manually record one-time expenses
+- [Reports](/features/reports) - Analyze your recurring expense patterns

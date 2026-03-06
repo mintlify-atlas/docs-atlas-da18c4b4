@@ -1,0 +1,307 @@
+---
+title: 'Upload Image API'
+description: 'Upload receipt images with AI-powered OCR analysis using Gemini Vision'
+api: 'POST /api/upload-image'
+---
+
+## Overview
+
+The Upload Image API processes receipt and invoice images using AI-powered OCR (Optical Character Recognition). It uploads images to Supabase Storage and analyzes them with Google's Gemini 2.5 Flash multimodal model to extract transaction details.
+
+## Authentication
+
+Requires:
+- Supabase authentication
+- Valid OpenRouter API key configured in environment variables
+- Access to Supabase Storage bucket `facturas`
+
+## Endpoint
+
+```
+POST /api/upload-image
+```
+
+## Request
+
+<ParamField body="image" type="File" required>
+  Image file in `multipart/form-data` format.
+  
+  **Supported formats:** JPG, PNG, WEBP
+  
+  **Recommended:** Clear photos of receipts, invoices, or purchase tickets
+</ParamField>
+
+### Content-Type
+
+```
+multipart/form-data
+```
+
+## Response
+
+<ResponseField name="success" type="boolean">
+  Indicates if the upload and analysis completed successfully
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  Public URL of the uploaded image in Supabase Storage
+</ResponseField>
+
+<ResponseField name="analysis" type="string">
+  Formatted markdown text with OCR analysis results for display
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Structured OCR data for programmatic use
+  
+  <ResponseField name="es_ticket" type="boolean">
+    Whether the image is recognized as a valid receipt/invoice
+  </ResponseField>
+  
+  <ResponseField name="monto" type="number" optional>
+    Extracted total amount (only if `es_ticket: true`)
+  </ResponseField>
+  
+  <ResponseField name="comercio" type="string" optional>
+    Extracted business/merchant name
+  </ResponseField>
+  
+  <ResponseField name="categoria_sugerida" type="string" optional>
+    AI-suggested category from valid system categories
+  </ResponseField>
+  
+  <ResponseField name="items" type="array" optional>
+    List of items/products found on the receipt
+  </ResponseField>
+  
+  <ResponseField name="fecha" type="string" optional>
+    Extracted date in `YYYY-MM-DD` format
+  </ResponseField>
+  
+  <ResponseField name="descripcion" type="string" optional>
+    Brief description of the transaction
+  </ResponseField>
+  
+  <ResponseField name="razon" type="string" optional>
+    Reason if image is not recognized as a ticket (`es_ticket: false`)
+  </ResponseField>
+  
+  <ResponseField name="sugerencia" type="string" optional>
+    Suggestion for user if image is invalid
+  </ResponseField>
+</ResponseField>
+
+## Valid Categories
+
+The AI suggests one of these predefined categories:
+
+**Expenses (Gastos):**
+- Alimentación
+- Transporte
+- Vivienda
+- Salud
+- Entretenimiento
+- Educación
+- Otros Gastos
+
+**Income (Ingresos):**
+- Salario
+- Ventas
+- Servicios
+- Inversiones
+- Otros Ingresos
+
+## Examples
+
+<CodeGroup>
+
+```javascript JavaScript (FormData)
+const formData = new FormData();
+const fileInput = document.querySelector('input[type="file"]');
+formData.append('image', fileInput.files[0]);
+
+const response = await fetch('/api/upload-image', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await response.json();
+console.log('Analysis:', result.analysis);
+console.log('Amount:', result.data.monto);
+```
+
+```python Python (requests)
+import requests
+
+with open('receipt.jpg', 'rb') as f:
+    files = {'image': f}
+    response = requests.post(
+        'http://localhost:3000/api/upload-image',
+        files=files
+    )
+
+data = response.json()
+print(f"Detected amount: ${data['data']['monto']}")
+print(f"Business: {data['data']['comercio']}")
+print(f"Category: {data['data']['categoria_sugerida']}")
+```
+
+```bash cURL
+curl -X POST http://localhost:3000/api/upload-image \
+  -F "image=@receipt.jpg"
+```
+
+</CodeGroup>
+
+## Response Examples
+
+### Valid Receipt (Gas Station)
+
+<CodeGroup>
+
+```json Success Response
+{
+  "success": true,
+  "url": "https://example.supabase.co/storage/v1/object/public/facturas/ticket_1709740800000_receipt.jpg",
+  "analysis": "📸 **TICKET ANALIZADO:**\n\n💰 **Monto:** $450.50 MXN\n🏪 **Comercio:** Pemex\n📁 **Categoría sugerida:** Transporte\n📋 **Items:** Magna Premium 30L, Total\n📅 **Fecha:** 2024-03-06\n\n📝 **Descripción:** Llenado de combustible en Pemex",
+  "data": {
+    "es_ticket": true,
+    "monto": 450.50,
+    "comercio": "Pemex",
+    "categoria_sugerida": "Transporte",
+    "items": ["Magna Premium 30L", "Total"],
+    "fecha": "2024-03-06",
+    "descripcion": "Llenado de combustible en Pemex"
+  }
+}
+```
+
+</CodeGroup>
+
+### Valid Receipt (Supermarket)
+
+<CodeGroup>
+
+```json Supermarket Receipt
+{
+  "success": true,
+  "url": "https://example.supabase.co/storage/v1/object/public/facturas/ticket_1709827200000_walmart.jpg",
+  "analysis": "📸 **TICKET ANALIZADO:**\n\n💰 **Monto:** $350 MXN\n🏪 **Comercio:** Walmart\n📁 **Categoría sugerida:** Alimentación\n📋 **Items:** Leche, Pan, Huevos, Verduras\n📅 **Fecha:** 2024-03-09\n\n📝 **Descripción:** Compra de despensa en Walmart",
+  "data": {
+    "es_ticket": true,
+    "monto": 350.00,
+    "comercio": "Walmart",
+    "categoria_sugerida": "Alimentación",
+    "items": ["Leche", "Pan", "Huevos", "Verduras"],
+    "fecha": "2024-03-09",
+    "descripcion": "Compra de despensa en Walmart"
+  }
+}
+```
+
+</CodeGroup>
+
+### Invalid Image (Not a Receipt)
+
+<CodeGroup>
+
+```json Not a Receipt
+{
+  "success": true,
+  "url": "https://example.supabase.co/storage/v1/object/public/facturas/ticket_1709913600000_screenshot.jpg",
+  "analysis": "⚠️ **IMAGEN NO RECONOCIDA COMO TICKET**\n\nEsta es una captura de pantalla de una conversación de texto, no un ticket o factura.\n\n💡 **Sugerencia:** Por favor sube una foto de un ticket, factura o recibo de compra para que pueda analizarlo.\n\nSi quieres registrar algo manualmente, dime:\n- ¿Es gasto o ingreso?\n- Monto\n- Comercio/Proveedor\n- Categoría",
+  "data": {
+    "es_ticket": false,
+    "razon": "Esta es una captura de pantalla de una conversación de texto, no un ticket o factura",
+    "sugerencia": "Por favor sube una foto de un ticket, factura o recibo de compra para que pueda analizarlo"
+  }
+}
+```
+
+</CodeGroup>
+
+### Error Response
+
+<CodeGroup>
+
+```json No Image Provided
+{
+  "error": "No image provided"
+}
+```
+
+```json Upload Error
+{
+  "error": "Upload error: [Supabase error message]"
+}
+```
+
+```json Vision API Error
+{
+  "error": "Vision API error: [API error message]"
+}
+```
+
+</CodeGroup>
+
+## Workflow
+
+1. **Upload Image** to Supabase Storage bucket `facturas`
+   - Filename format: `ticket_{timestamp}_{original_name}`
+   - Content-Type preserved from original file
+
+2. **Get Public URL** from Supabase Storage
+
+3. **Analyze with Gemini 2.5 Flash**
+   - Multimodal vision capabilities
+   - OCR with structured JSON output
+   - Category suggestion from valid list
+
+4. **Validate Response**
+   - Determines if image is a valid receipt (`es_ticket`)
+   - Extracts structured data (amount, merchant, items, date)
+
+5. **Format Response**
+   - User-friendly markdown text (`analysis`)
+   - Structured JSON for programmatic use (`data`)
+
+## AI Vision Capabilities
+
+Gemini 2.5 Flash is specifically prompted to:
+
+- **Validate** if the image is actually a receipt/invoice
+- **Extract** total amount, merchant name, date
+- **Identify** purchased items
+- **Suggest** appropriate category from the valid list
+- **Reject** screenshots, random photos, or non-receipt images
+- **Provide** helpful suggestions when image is invalid
+
+<Note>
+  The AI uses `response_format: { type: 'json_object' }` to ensure structured JSON output. Temperature is set to 0.1 for consistent, accurate extractions.
+</Note>
+
+## Storage Details
+
+- **Bucket:** `facturas` (Supabase Storage)
+- **Access:** Public read access for uploaded images
+- **Naming:** `ticket_{timestamp}_{original_filename}`
+- **Persistence:** Images remain in storage for future reference
+
+## Integration with Chat
+
+The extracted data can be passed to `/api/chat/stream` for conversational transaction registration:
+
+```javascript
+// 1. Upload image
+const uploadResult = await uploadImage(file);
+
+// 2. Send to chat with OCR data
+const chatResponse = await fetch('/api/chat/stream', {
+  method: 'POST',
+  body: JSON.stringify({
+    message: 'Registra este gasto',
+    images: [uploadResult.url],
+    messages: []
+  })
+});
+```

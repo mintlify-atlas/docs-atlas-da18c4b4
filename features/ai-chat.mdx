@@ -1,0 +1,290 @@
+---
+title: AI Chat Assistant
+description: Natural language transaction entry powered by AI
+icon: messages
+---
+
+## Overview
+
+The AI Chat Assistant allows you to register expenses and income using natural conversation in Spanish. Simply describe your transaction, and the AI will extract the details and save it to your database automatically.
+
+<Note>
+  The AI Chat uses Google's Gemini 2.5 Flash model via OpenRouter for fast, accurate transaction processing.
+</Note>
+
+## How It Works
+
+The chat assistant uses **function calling** to understand your intent and automatically register transactions:
+
+<Steps>
+  <Step title="Send a message">
+    Describe your transaction in natural language:
+    - "Gasté 450 pesos en gasolina"
+    - "Recibí un ingreso de 5000 por freelance"
+    - "Compré despensa en Walmart por 850"
+  </Step>
+  
+  <Step title="AI extracts information">
+    The AI identifies:
+    - Transaction type (expense or income)
+    - Amount
+    - Category (from predefined list)
+    - Optional: description, payment method, who registered it
+  </Step>
+  
+  <Step title="Confirmation">
+    If information is missing, the AI will ask clarifying questions:
+    - "¿En qué categoría clasificamos este gasto?"
+    - "¿Cuál fue el método de pago?"
+  </Step>
+  
+  <Step title="Automatic registration">
+    Once confirmed, the transaction is saved to your Supabase database with a success message.
+  </Step>
+</Steps>
+
+## Conversation Examples
+
+### Basic Expense
+
+```
+User: Gasté 200 pesos en Uber
+AI: ✅ Gasto registrado exitosamente!
+
+💰 Monto: $200 MXN
+📁 Categoría: Transporte
+📝 Descripción: Uber
+💳 Método: Efectivo
+👤 Registrado por: Usuario
+```
+
+### Income Registration
+
+```
+User: Recibí 8000 pesos de salario
+AI: ✅ Ingreso registrado exitosamente!
+
+💰 Monto: $8,000 MXN
+📁 Categoría: Salario
+📝 Descripción: N/A
+💳 Método: Transferencia
+👤 Registrado por: Usuario
+```
+
+### Missing Information
+
+```
+User: Gasté 500 pesos
+AI: Entiendo que gastaste $500. ¿En qué categoría clasificamos este gasto?
+    - Alimentación
+    - Transporte
+    - Vivienda
+    - Salud
+    - Entretenimiento
+    - Educación
+    - Otros Gastos
+
+User: Alimentación
+AI: ✅ Gasto registrado exitosamente!
+```
+
+## Available Categories
+
+### Expenses
+- Alimentación
+- Transporte
+- Vivienda
+- Salud
+- Entretenimiento
+- Educación
+- Otros Gastos
+
+### Income
+- Salario
+- Ventas
+- Servicios
+- Inversiones
+- Otros Ingresos
+
+## Payment Methods
+
+The AI can recognize and categorize these payment methods:
+- **Efectivo** (Cash)
+- **Tarjeta** (Card)
+- **Transferencia** (Transfer)
+
+<Tip>
+  You can specify who registered the transaction by including names: "María gastó 300 en el super" will set `registrado_por: "María"`
+</Tip>
+
+## Function Calling Schema
+
+The AI has access to two functions defined in the API:
+
+### registrar_gasto
+
+```typescript
+{
+  name: 'registrar_gasto',
+  description: 'Registra un nuevo gasto en la base de datos',
+  parameters: {
+    type: 'object',
+    properties: {
+      monto: {
+        type: 'number',
+        description: 'Monto del gasto en MXN'
+      },
+      categoria: {
+        type: 'string',
+        enum: ['Alimentación', 'Transporte', 'Vivienda', 
+               'Salud', 'Entretenimiento', 'Educación', 'Otros Gastos']
+      },
+      descripcion: { type: 'string' },
+      metodo_pago: {
+        type: 'string',
+        enum: ['Efectivo', 'Tarjeta', 'Transferencia']
+      },
+      registrado_por: { type: 'string' }
+    },
+    required: ['monto', 'categoria']
+  }
+}
+```
+
+See implementation in `/app/api/chat/route.ts:89-124`
+
+### registrar_ingreso
+
+```typescript
+{
+  name: 'registrar_ingreso',
+  description: 'Registra un nuevo ingreso en la base de datos',
+  parameters: {
+    type: 'object',
+    properties: {
+      monto: { type: 'number' },
+      categoria: {
+        type: 'string',
+        enum: ['Salario', 'Ventas', 'Servicios', 
+               'Inversiones', 'Otros Ingresos']
+      },
+      descripcion: { type: 'string' },
+      metodo_pago: {
+        type: 'string',
+        enum: ['Efectivo', 'Tarjeta', 'Transferencia']
+      },
+      registrado_por: { type: 'string' }
+    },
+    required: ['monto', 'categoria']
+  }
+}
+```
+
+See implementation in `/app/api/chat/route.ts:125-159`
+
+## System Prompt
+
+The AI assistant is configured with this system prompt:
+
+```text
+Eres un asistente financiero personal. Tu trabajo es ayudar a registrar 
+gastos e ingresos de forma conversacional.
+
+🎯 HERRAMIENTAS DISPONIBLES:
+1. registrar_gasto - Para registrar un gasto
+2. registrar_ingreso - Para registrar un ingreso
+
+💡 INSTRUCCIONES:
+- Sé amigable y conversacional
+- Confirma los datos antes de registrar
+- Si falta información (categoría, monto), pregunta
+- Después de registrar, confirma con un resumen
+- Si hay imagen, analízala y extrae la información automáticamente
+```
+
+Full prompt available in `/app/api/chat/route.ts:33-57`
+
+## Technical Details
+
+### API Endpoint
+
+**POST** `/api/chat`
+
+**Request Body:**
+```typescript
+{
+  message: string
+  messages: Array<{
+    role: 'user' | 'assistant'
+    content: string
+  }>
+  images?: string[] // Optional: for OCR integration
+}
+```
+
+**Response:**
+```typescript
+{
+  response: string // AI assistant response or confirmation
+  usage?: object   // Token usage statistics
+  model?: string   // Model used
+}
+```
+
+### Conversation History
+
+The API maintains the last 10 messages for context:
+
+```typescript
+messages.slice(-10).map(msg => ({
+  role: msg.role,
+  content: msg.content
+}))
+```
+
+See `/app/api/chat/route.ts:59-67`
+
+### Database Integration
+
+When the AI calls a function, the transaction is immediately saved to Supabase:
+
+```typescript
+const { error } = await supabase
+  .from('transacciones')
+  .insert({
+    tipo,
+    monto: functionArgs.monto,
+    categoria: functionArgs.categoria,
+    descripcion: functionArgs.descripcion || null,
+    metodo_pago: functionArgs.metodo_pago || 'Efectivo',
+    registrado_por: functionArgs.registrado_por || 'Usuario',
+    fecha_hora: new Date().toISOString(),
+  })
+```
+
+See `/app/api/chat/route.ts:183-193`
+
+<Warning>
+  The OpenRouter API key is required for this feature to work. See [AI Configuration](/features/ai-configuration) for setup instructions.
+</Warning>
+
+## Error Handling
+
+If registration fails, the AI will return a friendly error message:
+
+```
+❌ Error al registrar gasto: [error details]
+
+Por favor, intenta de nuevo o usa el formulario manual.
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="OCR Scanning" icon="camera" href="/features/ocr-scanning">
+    Upload receipt images for automatic data extraction
+  </Card>
+  <Card title="AI Configuration" icon="gear" href="/features/ai-configuration">
+    Set up your OpenRouter API key and customize settings
+  </Card>
+</CardGroup>

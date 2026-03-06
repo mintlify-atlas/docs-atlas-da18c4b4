@@ -1,0 +1,683 @@
+---
+title: 'Troubleshooting'
+description: 'Common issues and solutions for Sistema Financiero'
+icon: 'wrench'
+---
+
+## Database Issues
+
+### Error: "Missing Supabase environment variables"
+
+**Cause:** Environment variables not set or `.env.local` file missing.
+
+**Solution:**
+
+<Steps>
+  <Step title="Check .env.local File">
+    Verify the file exists in project root:
+
+    ```bash
+    ls -la .env.local
+    ```
+  </Step>
+
+  <Step title="Verify Variables">
+    File: `.env.local`
+
+    ```bash
+    NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1...
+    ```
+
+    <Warning>
+      Variables starting with `NEXT_PUBLIC_` are exposed to the browser. Never put service role keys there.
+    </Warning>
+  </Step>
+
+  <Step title="Restart Dev Server">
+    ```bash
+    # Stop current server (Ctrl+C)
+    npm run dev
+    ```
+  </Step>
+</Steps>
+
+### Error: "RLS policy violation" or "new row violates row-level security policy"
+
+**Cause:** Row Level Security (RLS) is enabled but `usuario_id` is not set correctly.
+
+**Solution:**
+
+<CodeGroup>
+```sql Check Current Policies
+-- Run in Supabase SQL Editor
+SELECT * FROM pg_policies WHERE tablename = 'transacciones';
+```
+
+```sql Fix Missing Policies
+-- Enable RLS if not enabled
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Users can view own transactions" ON transacciones;
+DROP POLICY IF EXISTS "Users can insert own transactions" ON transacciones;
+
+-- Recreate correct policies
+CREATE POLICY "Users can view own transactions"
+  ON transacciones FOR SELECT
+  USING (auth.uid() = usuario_id);
+
+CREATE POLICY "Users can insert own transactions"
+  ON transacciones FOR INSERT
+  WITH CHECK (auth.uid() = usuario_id);
+```
+
+```typescript Bypass RLS (Development Only)
+// File: app/api/transacciones/route.ts
+// ⚠️ WARNING: Only for local development!
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY! // ← Use service role key
+)
+```
+</CodeGroup>
+
+<Warning>
+  **Never disable RLS in production.** It protects user data from unauthorized access.
+</Warning>
+
+### Error: "relation 'transacciones' does not exist"
+
+**Cause:** Database table not created.
+
+**Solution:**
+
+<Steps>
+  <Step title="Open Supabase Dashboard">
+    Go to [supabase.com](https://supabase.com/) → Your Project → SQL Editor
+  </Step>
+
+  <Step title="Run Schema Creation">
+    Copy and paste the full schema from [Database Schema](/development/database-schema):
+
+    ```sql
+    CREATE TABLE transacciones (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+      tipo TEXT CHECK (tipo IN ('ingreso', 'gasto')) NOT NULL,
+      monto NUMERIC(10, 2) NOT NULL CHECK (monto > 0),
+      categoria TEXT NOT NULL,
+      concepto TEXT DEFAULT 'Transacción manual',
+      descripcion TEXT,
+      metodo_pago TEXT CHECK (metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia')),
+      registrado_por TEXT,
+      foto_url TEXT,
+      usuario_id UUID REFERENCES auth.users(id),
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+    ```
+  </Step>
+
+  <Step title="Verify Table Created">
+    Go to Supabase → Table Editor → Check if `transacciones` appears
+  </Step>
+</Steps>
+
+### Error: "duplicate key value violates unique constraint"
+
+**Cause:** Trying to insert a record with an existing `id`.
+
+**Solution:**
+
+Don't manually set the `id` field. Let PostgreSQL auto-generate it:
+
+```typescript
+// ❌ Wrong
+const { error } = await supabase.from('transacciones').insert({
+  id: '123e4567-e89b-12d3-a456-426614174000', // Don't do this
+  tipo: 'gasto',
+  // ...
+})
+
+// ✅ Correct
+const { error } = await supabase.from('transacciones').insert({
+  tipo: 'gasto',
+  monto: 100,
+  // ... (id is auto-generated)
+})
+```
+
+## AI Chat Issues
+
+### Error: "OpenRouter error (401): Unauthorized"
+
+**Cause:** Invalid or missing OpenRouter API key.
+
+**Solution:**
+
+<Steps>
+  <Step title="Get API Key">
+    Go to [OpenRouter](https://openrouter.ai/) → Sign In → Keys → Create New Key
+  </Step>
+
+  <Step title="Add to .env.local">
+    ```bash
+    OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    ```
+  </Step>
+
+  <Step title="Restart Server">
+    ```bash
+    npm run dev
+    ```
+  </Step>
+</Steps>
+
+### Error: "OpenRouter error (429): Rate limit exceeded"
+
+**Cause:** Too many API requests. OpenRouter free tier has limits.
+
+**Solution:**
+
+- **Option 1:** Wait 60 seconds and try again
+- **Option 2:** Add credits to OpenRouter account
+- **Option 3:** Switch to cheaper model:
+
+```typescript
+// File: app/api/chat/stream/route.ts:54
+model: 'google/gemini-2.5-flash', // ← Cheapest option
+```
+
+### AI Not Calling Functions / Not Registering Transactions
+
+**Cause:** Model doesn't support function calling or tool schema is invalid.
+
+**Solution:**
+
+<Steps>
+  <Step title="Check Model Compatibility">
+    Only these models support function calling:
+    - `google/gemini-2.5-flash` ✅
+    - `anthropic/claude-3.5-sonnet` ✅
+    - `openai/gpt-4o` ✅
+    - `meta-llama/llama-3.1-70b-instruct` ✅
+  </Step>
+
+  <Step title="Validate Tool Schema">
+    File: `app/api/chat/stream/route.ts:63-120`
+
+    Ensure the `tools` array is valid JSON:
+
+    ```bash
+    # Test in Node.js console
+    node -e "console.log(JSON.stringify({ type: 'function', function: { name: 'test' } }))"
+    ```
+  </Step>
+
+  <Step title="Check Console Logs">
+    File: `app/api/chat/stream/route.ts:196-234`
+
+    Add debug logs:
+
+    ```typescript
+    if (toolCallData && toolCallData.name && toolCallData.arguments) {
+      console.log('Tool call detected:', toolCallData) // ← Add this
+      // ... rest of code
+    }
+    ```
+  </Step>
+</Steps>
+
+### AI Responses Are Cut Off / Incomplete
+
+**Cause:** `max_tokens` limit reached.
+
+**Solution:**
+
+Increase token limit:
+
+```typescript
+// File: app/api/chat/stream/route.ts:56
+max_tokens: 4000, // ← Increase from 2000
+```
+
+<Note>
+  Higher `max_tokens` = higher cost per request. Balance quality vs cost.
+</Note>
+
+## OCR Issues
+
+### Error: "Upload error: Bucket not found"
+
+**Cause:** Supabase storage bucket `facturas` doesn't exist.
+
+**Solution:**
+
+<Steps>
+  <Step title="Create Bucket">
+    Go to Supabase Dashboard → Storage → Create Bucket
+
+    - Name: `facturas`
+    - Public: ✅ Yes (checked)
+  </Step>
+
+  <Step title="Set Bucket Policies">
+    Run in Supabase SQL Editor:
+
+    ```sql
+    -- Allow authenticated users to upload
+    CREATE POLICY "Users can upload receipts"
+      ON storage.objects FOR INSERT
+      WITH CHECK (
+        bucket_id = 'facturas' AND
+        auth.role() = 'authenticated'
+      );
+
+    -- Allow public read access
+    CREATE POLICY "Public read access"
+      ON storage.objects FOR SELECT
+      USING (bucket_id = 'facturas');
+    ```
+  </Step>
+</Steps>
+
+### OCR Returns "No se reconoció el ticket"
+
+**Cause:** Image quality too low or not a valid receipt.
+
+**Solution:**
+
+- Use high-resolution images (min 1080x1920)
+- Ensure good lighting (no shadows)
+- Make sure text is readable
+- Try a different AI model:
+
+```typescript
+// File: app/api/upload-image/route.ts:49
+model: 'anthropic/claude-3.5-sonnet', // ← Better OCR accuracy
+```
+
+### OCR Extracts Wrong Amount
+
+**Cause:** Multiple totals on receipt (subtotal, tax, tip, etc.).
+
+**Solution:**
+
+Improve OCR prompt to prioritize "Total" or "Total a Pagar":
+
+```typescript
+// File: app/api/upload-image/route.ts:56-114
+text: `Analiza esta imagen y determina si es un ticket/factura válido.
+
+**PASO 1: VALIDAR SI ES UN TICKET**
+...
+
+**INSTRUCCIONES PARA EXTRACCIÓN DE MONTO:**
+1. Busca el monto etiquetado como "TOTAL", "Total a Pagar", "Total Final"
+2. Ignora "Subtotal", "IVA", "Propina" (a menos que sea el único monto visible)
+3. Si hay múltiples totales, usa el MÁS GRANDE
+4. Incluye decimales si están presentes
+
+// ... rest of prompt
+`
+```
+
+## Frontend Issues
+
+### Dashboard Shows $0.00 / No Transactions
+
+**Possible Causes:**
+
+1. **No data in database**
+   - Solution: Add test transactions via Registro or AI Chat
+
+2. **RLS policy blocking data**
+   - Solution: Check [RLS troubleshooting](#error-rls-policy-violation-or-new-row-violates-row-level-security-policy)
+
+3. **API endpoint returning empty array**
+   - Check API response:
+   ```bash
+   curl http://localhost:3000/api/transacciones?vista=mensual
+   ```
+
+### Chart Not Displaying / Blank Chart
+
+**Cause:** Missing Chart.js registration or data format issue.
+
+**Solution:**
+
+<Steps>
+  <Step title="Check Chart.js Import">
+    File: `components/TrendChart.tsx`
+
+    ```typescript
+    import {
+      Chart as ChartJS,
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      Title,
+      Tooltip,
+      Legend,
+      Filler,
+    } from 'chart.js'
+    import { Line } from 'react-chartjs-2'
+
+    // Must register components
+    ChartJS.register(
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      Title,
+      Tooltip,
+      Legend,
+      Filler
+    )
+    ```
+  </Step>
+
+  <Step title="Verify Data Format">
+    Chart.js requires specific format:
+
+    ```typescript
+    const chartData = {
+      labels: ['Ene', 'Feb', 'Mar'], // ← Must be array of strings
+      datasets: [
+        {
+          label: 'Ingresos',
+          data: [1000, 1500, 1200], // ← Must be array of numbers
+        }
+      ]
+    }
+    ```
+  </Step>
+</Steps>
+
+### Dark Mode Not Working
+
+**Cause:** Tailwind dark mode not configured.
+
+**Solution:**
+
+File: `tailwind.config.js`
+
+```javascript
+module.exports = {
+  darkMode: 'class', // ← Must be 'class' for toggle support
+  content: [
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+  ],
+  // ... rest of config
+}
+```
+
+### "Hydration Error" in Console
+
+**Cause:** Server-rendered HTML doesn't match client-side React.
+
+**Common Causes:**
+
+1. **Using `Date.now()` or `Math.random()` in render**
+   - Solution: Move to `useEffect`
+
+2. **Conditional rendering based on `window` object**
+   - Solution: Check `typeof window !== 'undefined'`
+
+3. **Third-party library hydration mismatch**
+   - Solution: Wrap in `<ClientOnly>` or use `'use client'` directive
+
+Example fix:
+
+```typescript
+'use client' // ← Add this at top of file
+
+import { useState, useEffect } from 'react'
+
+export function MyComponent() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null // Prevent hydration mismatch
+
+  return <div>{new Date().toLocaleString()}</div>
+}
+```
+
+## Build Issues
+
+### Error: "Type error: Property 'X' does not exist on type 'Y'"
+
+**Cause:** TypeScript interface mismatch.
+
+**Solution:**
+
+Update interface to match actual data:
+
+```typescript
+// File: components/DataViews.tsx:8
+interface Transaccion {
+  id: string
+  fecha: string
+  tipo: 'gasto' | 'ingreso'
+  categoria: string
+  monto: number
+  descripcion: string | null // ← Add | null if field is nullable
+  metodo_pago: string
+}
+```
+
+### Error: "Module not found: Can't resolve '@/...' "
+
+**Cause:** Path alias not configured.
+
+**Solution:**
+
+File: `tsconfig.json`
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./*"] // ← Ensure this is present
+    }
+  }
+}
+```
+
+Restart dev server after changes.
+
+### Build Succeeds but Pages Are Blank
+
+**Cause:** Client-side code running on server.
+
+**Solution:**
+
+Add `'use client'` directive to components using hooks:
+
+```typescript
+'use client' // ← Add at top of file
+
+import { useState, useEffect } from 'react'
+
+export function MyComponent() {
+  const [data, setData] = useState([])
+  // ...
+}
+```
+
+## Performance Issues
+
+### Dashboard Loads Slowly
+
+**Solutions:**
+
+<Steps>
+  <Step title="Limit Query Results">
+    File: `app/api/transacciones/route.ts:45`
+
+    ```typescript
+    const { data, error } = await query.limit(500) // ← Add limit
+    ```
+  </Step>
+
+  <Step title="Add Indexes">
+    Run in Supabase SQL Editor:
+
+    ```sql
+    CREATE INDEX IF NOT EXISTS idx_transacciones_fecha
+      ON transacciones(fecha DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_transacciones_usuario
+      ON transacciones(usuario_id);
+    ```
+  </Step>
+
+  <Step title="Cache API Responses">
+    File: `app/page.tsx`
+
+    ```typescript
+    export const revalidate = 60 // Cache for 60 seconds
+    ```
+  </Step>
+</Steps>
+
+### AI Chat Responses Are Slow
+
+**Solutions:**
+
+- Use faster model: `google/gemini-2.5-flash`
+- Reduce `max_tokens` to 1000-1500
+- Disable thinking mode:
+
+```typescript
+// File: app/api/chat/stream/route.ts:60-62
+// Comment out thinking_config:
+// thinking_config: {
+//   max_thinking_tokens: 500,
+// },
+```
+
+## Deployment Issues
+
+### Vercel Build Fails
+
+**Common Causes:**
+
+1. **Missing environment variables**
+   - Solution: Add to Vercel Dashboard → Settings → Environment Variables
+
+2. **TypeScript errors**
+   - Solution: Run `npm run build` locally to see errors
+
+3. **Dependency version conflicts**
+   - Solution: Delete `node_modules` and `package-lock.json`, then `npm install`
+
+### API Routes Return 404 in Production
+
+**Cause:** Routes not exported correctly.
+
+**Solution:**
+
+Ensure route files use proper exports:
+
+```typescript
+// File: app/api/transacciones/route.ts
+export async function GET(request: Request) { // ← Must use 'export'
+  // ...
+}
+```
+
+### Environment Variables Not Working in Production
+
+**Cause:** Variables not set in Vercel/Netlify dashboard.
+
+**Solution:**
+
+<Steps>
+  <Step title="Open Deployment Dashboard">
+    Vercel → Project → Settings → Environment Variables
+  </Step>
+
+  <Step title="Add All Variables">
+    ```
+    NEXT_PUBLIC_SUPABASE_URL
+    NEXT_PUBLIC_SUPABASE_ANON_KEY
+    OPENROUTER_API_KEY
+    NEXT_PUBLIC_SITE_URL
+    ```
+  </Step>
+
+  <Step title="Redeploy">
+    Trigger new deployment for changes to take effect
+  </Step>
+</Steps>
+
+## Getting Help
+
+<CardGroup cols={2}>
+  <Card title="GitHub Issues" icon="github" href="https://github.com/danielcarreon/sistema-financiero-app/issues">
+    Report bugs or request features
+  </Card>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/danielcarreon/sistema-financiero-app/discussions">
+    Ask questions and share tips
+  </Card>
+  <Card title="Supabase Docs" icon="book" href="https://supabase.com/docs">
+    Official Supabase documentation
+  </Card>
+  <Card title="OpenRouter Docs" icon="robot" href="https://openrouter.ai/docs">
+    OpenRouter API documentation
+  </Card>
+</CardGroup>
+
+## Debug Checklist
+
+When something doesn't work, check these in order:
+
+<Steps>
+  <Step title="Check Browser Console">
+    Open DevTools (F12) → Console tab → Look for errors
+  </Step>
+
+  <Step title="Check Network Tab">
+    DevTools → Network tab → Look for failed requests (red)
+  </Step>
+
+  <Step title="Check Server Logs">
+    Terminal running `npm run dev` → Look for error messages
+  </Step>
+
+  <Step title="Verify Environment Variables">
+    ```bash
+    cat .env.local
+    ```
+    Ensure all required variables are set
+  </Step>
+
+  <Step title="Check Database">
+    Supabase Dashboard → Table Editor → Verify data exists
+  </Step>
+
+  <Step title="Test API Directly">
+    ```bash
+    curl http://localhost:3000/api/transacciones?vista=mensual
+    ```
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Database Schema" icon="database" href="/development/database-schema">
+    Understand the database structure
+  </Card>
+  <Card title="Adding Features" icon="code" href="/development/adding-features">
+    Extend the application
+  </Card>
+</CardGroup>

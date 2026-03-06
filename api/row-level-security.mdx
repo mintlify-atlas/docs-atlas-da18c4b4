@@ -1,0 +1,636 @@
+---
+title: 'Row Level Security'
+description: 'Understanding how RLS policies protect user data and ensure data isolation in Sistema Financiero'
+icon: 'shield-halved'
+---
+
+## Overview
+
+Row Level Security (RLS) is a PostgreSQL feature that controls which rows users can access in database tables. Sistema Financiero uses RLS to ensure users only see their own financial transactions.
+
+<Note>
+  RLS is enforced at the database level, making it impossible to bypass even if application-level security is compromised.
+</Note>
+
+## Why Row Level Security?
+
+### Without RLS
+
+```sql
+-- ❌ All users can see ALL transactions
+SELECT * FROM transacciones;
+-- Returns: All transactions from all users
+```
+
+### With RLS
+
+```sql
+-- ✅ Users only see their own transactions
+SELECT * FROM transacciones;
+-- Returns: Only transactions where usuario_id = auth.uid()
+```
+
+## Database Schema
+
+### Transacciones Table
+
+The main table storing all financial transactions:
+
+```sql
+CREATE TABLE transacciones (
+  -- Primary Key
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+  -- Core Transaction Fields
+  fecha TIMESTAMP NOT NULL DEFAULT NOW(),
+  tipo TEXT CHECK (tipo IN ('ingreso', 'gasto')) NOT NULL,
+  monto NUMERIC(10, 2) NOT NULL CHECK (monto > 0),
+  categoria TEXT NOT NULL,
+
+  -- Optional Details
+  concepto TEXT DEFAULT 'Transacción manual',
+  descripcion TEXT,
+  metodo_pago TEXT CHECK (metodo_pago IN ('Efectivo', 'Tarjeta', 'Transferencia')),
+  registrado_por TEXT,
+  foto_url TEXT,
+
+  -- User Association (Critical for RLS)
+  usuario_id UUID REFERENCES auth.users(id),
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+<ParamField path="usuario_id" type="UUID">
+  Foreign key linking transactions to Supabase Auth users. This field is **critical** for RLS policies to work correctly.
+</ParamField>
+
+## RLS Configuration
+
+### Step 1: Enable RLS
+
+```sql
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+```
+
+<Warning>
+  Once RLS is enabled, **all queries will return zero rows** until policies are created. This is a security feature.
+</Warning>
+
+### Step 2: Create Policies
+
+#### Select Policy (Read Access)
+
+```sql
+CREATE POLICY "Users can view own transactions"
+  ON transacciones
+  FOR SELECT
+  USING (auth.uid() = usuario_id);
+```
+
+**How it works:**
+- `auth.uid()` returns the currently authenticated user's ID
+- `usuario_id` is the foreign key in the table
+- Only rows where these match are visible
+
+#### Insert Policy (Create Access)
+
+```sql
+CREATE POLICY "Users can insert own transactions"
+  ON transacciones
+  FOR INSERT
+  WITH CHECK (auth.uid() = usuario_id);
+```
+
+**How it works:**
+- Checks the `usuario_id` of the row being inserted
+- Only allows insert if it matches the authenticated user's ID
+- Prevents users from creating transactions for other users
+
+### Complete RLS Setup
+
+Here's the complete SQL to set up RLS for Sistema Financiero:
+
+```sql
+-- Enable RLS
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+
+-- Policy 1: Users can view their own transactions
+CREATE POLICY "Users can view own transactions"
+  ON transacciones FOR SELECT
+  USING (auth.uid() = usuario_id);
+
+-- Policy 2: Users can insert their own transactions
+CREATE POLICY "Users can insert own transactions"
+  ON transacciones FOR INSERT
+  WITH CHECK (auth.uid() = usuario_id);
+
+-- Policy 3: Users can update their own transactions
+CREATE POLICY "Users can update own transactions"
+  ON transacciones FOR UPDATE
+  USING (auth.uid() = usuario_id)
+  WITH CHECK (auth.uid() = usuario_id);
+
+-- Policy 4: Users can delete their own transactions
+CREATE POLICY "Users can delete own transactions"
+  ON transacciones FOR DELETE
+  USING (auth.uid() = usuario_id);
+```
+
+## How RLS Works in Practice
+
+### Scenario 1: User Queries Their Transactions
+
+```typescript
+// Frontend/API code
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('*')
+  .order('fecha', { ascending: false });
+```
+
+**What happens behind the scenes:**
+
+```sql
+-- PostgreSQL automatically rewrites the query to:
+SELECT *
+FROM transacciones
+WHERE usuario_id = auth.uid()  -- ✅ RLS policy applied
+ORDER BY fecha DESC;
+```
+
+<Note>
+  You don't need to add `WHERE usuario_id = auth.uid()` in your application code. RLS handles this automatically!
+</Note>
+
+### Scenario 2: User Tries to Access Another User's Data
+
+```typescript
+// Attempting to access transaction with specific ID
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('*')
+  .eq('id', 'some-other-users-transaction-id');
+```
+
+**Result:**
+- If transaction belongs to current user: Returns data ✅
+- If transaction belongs to another user: Returns empty array ✅
+- No error is thrown, just filtered out silently
+
+### Scenario 3: Inserting a Transaction
+
+```typescript
+// API route - creating a transaction
+const { data, error } = await supabase
+  .from('transacciones')
+  .insert({
+    fecha: new Date().toISOString(),
+    tipo: 'gasto',
+    categoria: 'Alimentación',
+    monto: 250.00,
+    usuario_id: userId  // Must match auth.uid()
+  });
+```
+
+**RLS Validation:**
+```sql
+-- PostgreSQL checks:
+INSERT INTO transacciones (...)
+VALUES (...)
+WHERE auth.uid() = NEW.usuario_id;  -- ✅ Must pass
+```
+
+<Warning>
+  If `usuario_id` doesn't match `auth.uid()`, the insert will fail with a policy violation error.
+</Warning>
+
+## Current Implementation Status
+
+### Active Protection
+
+<Note>
+  The current implementation has RLS **configured in the schema** (README.md lines 86-97) but uses the **anonymous key** for all operations.
+</Note>
+
+```typescript
+// Current implementation in app/api/transacciones/route.ts
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!  // Anonymous key
+)
+
+export async function GET(request: Request) {
+  // No user authentication - returns all transactions
+  const { data, error } = await supabase
+    .from('transacciones')
+    .select('*')
+    .order('fecha', { ascending: false });
+
+  return NextResponse.json({ data });
+}
+```
+
+### Behavior
+
+**Without Authenticated Users:**
+- RLS policies exist but `auth.uid()` returns `NULL`
+- Queries return empty results (no transactions visible)
+- Inserts fail unless `usuario_id` is explicitly set
+
+**With Service Role Key (Bypasses RLS):**
+```typescript
+// Using service role key (NOT recommended for client-facing APIs)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!  // ⚠️ Bypasses RLS
+)
+```
+
+<Warning>
+  Never use the service role key in client-side code or public API routes. It bypasses all RLS policies!
+</Warning>
+
+## Data Isolation Examples
+
+### Multi-Tenant Scenario
+
+```sql
+-- User A's transactions
+INSERT INTO transacciones (usuario_id, tipo, monto, categoria)
+VALUES ('user-a-uuid', 'gasto', 100, 'Alimentación');
+
+-- User B's transactions
+INSERT INTO transacciones (usuario_id, tipo, monto, categoria)
+VALUES ('user-b-uuid', 'ingreso', 5000, 'Salario');
+```
+
+**When User A queries:**
+```sql
+SELECT * FROM transacciones;
+-- Returns ONLY:
+-- | usuario_id   | tipo  | monto | categoria    |
+-- | user-a-uuid  | gasto | 100   | Alimentación |
+```
+
+**When User B queries:**
+```sql
+SELECT * FROM transacciones;
+-- Returns ONLY:
+-- | usuario_id   | tipo    | monto | categoria |
+-- | user-b-uuid  | ingreso | 5000  | Salario   |
+```
+
+### Aggregate Queries
+
+RLS also protects aggregate functions:
+
+```typescript
+// Calculate user's total expenses
+const { data, error } = await supabase
+  .from('transacciones')
+  .select('monto')
+  .eq('tipo', 'gasto');
+
+const total = data?.reduce((sum, t) => sum + t.monto, 0);
+```
+
+**RLS ensures:**
+- Only current user's expenses are summed
+- No leakage of other users' financial data
+- Works for COUNT, SUM, AVG, etc.
+
+## Security Benefits
+
+### 1. Defense in Depth
+
+```typescript
+// Even if application code is compromised:
+const { data } = await supabase
+  .from('transacciones')
+  .select('*');  // Still only returns current user's data ✅
+```
+
+### 2. Protection Against SQL Injection
+
+RLS policies are evaluated **after** query parsing, protecting against injection:
+
+```sql
+-- Malicious attempt
+SELECT * FROM transacciones WHERE id = '1' OR '1'='1';
+
+-- Still filtered by RLS:
+SELECT * FROM transacciones
+WHERE (id = '1' OR '1'='1')
+  AND usuario_id = auth.uid();  -- ✅ RLS adds this
+```
+
+### 3. API Key Compromise Protection
+
+If the anonymous API key is exposed:
+- Attackers can only access their own data
+- Cannot query or modify other users' transactions
+- RLS enforced at database level (can't be disabled via API)
+
+## Testing RLS Policies
+
+### Using Supabase Dashboard
+
+1. Go to **Authentication** > **Users**
+2. Create test users
+3. Go to **Table Editor** > **transacciones**
+4. Switch between users using the dropdown
+5. Verify you only see that user's transactions
+
+### Using SQL Editor
+
+```sql
+-- Test as specific user
+SET request.jwt.claim.sub = 'user-uuid-here';
+
+SELECT * FROM transacciones;
+-- Should only show that user's transactions
+
+-- Test insert permission
+INSERT INTO transacciones (usuario_id, tipo, monto, categoria)
+VALUES ('user-uuid-here', 'gasto', 100, 'Test');
+-- Should succeed ✅
+
+INSERT INTO transacciones (usuario_id, tipo, monto, categoria)
+VALUES ('different-user-uuid', 'gasto', 100, 'Test');
+-- Should fail ❌ (policy violation)
+```
+
+### Automated Testing
+
+```typescript
+// Example test using Jest + Supabase
+import { createClient } from '@supabase/supabase-js';
+
+describe('RLS Policies', () => {
+  it('should only return user\'s own transactions', async () => {
+    const supabase = createClient(url, anonKey);
+    
+    // Authenticate as User A
+    await supabase.auth.signInWithPassword({
+      email: 'usera@example.com',
+      password: 'password'
+    });
+    
+    const { data } = await supabase
+      .from('transacciones')
+      .select('*');
+    
+    // Verify all transactions belong to User A
+    expect(data.every(t => t.usuario_id === userA.id)).toBe(true);
+  });
+});
+```
+
+## Common Pitfalls
+
+### Pitfall 1: Missing usuario_id
+
+```typescript
+// ❌ Will fail - no usuario_id
+const { error } = await supabase
+  .from('transacciones')
+  .insert({
+    fecha: new Date(),
+    tipo: 'gasto',
+    monto: 100
+  });
+
+console.log(error);
+// "new row violates row-level security policy"
+```
+
+**Solution:**
+```typescript
+// ✅ Include usuario_id
+const { data: { user } } = await supabase.auth.getUser();
+
+const { error } = await supabase
+  .from('transacciones')
+  .insert({
+    fecha: new Date(),
+    tipo: 'gasto',
+    monto: 100,
+    usuario_id: user.id  // ✅ Matches auth.uid()
+  });
+```
+
+### Pitfall 2: Using Service Role in Client Code
+
+```typescript
+// ❌ NEVER DO THIS
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!  // ⚠️ Exposes admin access
+)
+```
+
+**Impact:**
+- Bypasses all RLS policies
+- Full database access
+- Security vulnerability
+
+**Solution:** Only use service role key in secure server-side contexts (background jobs, admin panels).
+
+### Pitfall 3: Not Enabling RLS
+
+```sql
+-- ❌ Forgot to enable RLS
+CREATE TABLE transacciones (...);
+CREATE POLICY "Users can view own transactions" ON transacciones ...
+
+-- Policies exist but are not enforced!
+```
+
+**Solution:**
+```sql
+-- ✅ Must explicitly enable RLS
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+```
+
+## Performance Considerations
+
+### Indexing for RLS
+
+RLS adds a `WHERE` clause to every query. Optimize with indexes:
+
+```sql
+-- Index on usuario_id for fast filtering
+CREATE INDEX idx_transacciones_usuario ON transacciones(usuario_id);
+
+-- Composite index for common queries
+CREATE INDEX idx_transacciones_usuario_fecha 
+  ON transacciones(usuario_id, fecha DESC);
+```
+
+### Query Performance
+
+```typescript
+// RLS adds filter, but with index it's fast
+const { data } = await supabase
+  .from('transacciones')
+  .select('*')
+  .order('fecha', { ascending: false })
+  .limit(50);
+
+// PostgreSQL executes:
+// SELECT * FROM transacciones
+// WHERE usuario_id = auth.uid()  -- ✅ Uses index
+// ORDER BY fecha DESC
+// LIMIT 50;
+```
+
+<Note>
+  RLS overhead is minimal (typically < 1ms) when proper indexes exist.
+</Note>
+
+## Advanced RLS Patterns
+
+### Conditional Policies
+
+```sql
+-- Allow read-only access to transactions older than 1 year
+CREATE POLICY "Users can view old transactions"
+  ON transacciones FOR SELECT
+  USING (
+    auth.uid() = usuario_id
+    AND fecha < NOW() - INTERVAL '1 year'
+  );
+```
+
+### Role-Based Policies
+
+```sql
+-- Admins can see all transactions
+CREATE POLICY "Admins can view all transactions"
+  ON transacciones FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM auth.users
+      WHERE auth.users.id = auth.uid()
+        AND auth.users.role = 'admin'
+    )
+  );
+```
+
+### Team/Organization Policies
+
+```sql
+-- Users can see transactions from their organization
+CREATE POLICY "Users can view team transactions"
+  ON transacciones FOR SELECT
+  USING (
+    organizacion_id IN (
+      SELECT organizacion_id FROM users
+      WHERE users.id = auth.uid()
+    )
+  );
+```
+
+## Troubleshooting
+
+### "Row Level Security Policy Violation"
+
+**Symptom:**
+```json
+{
+  "error": "new row violates row-level security policy for table \"transacciones\""
+}
+```
+
+**Causes:**
+1. `usuario_id` doesn't match `auth.uid()`
+2. User not authenticated (`auth.uid()` returns NULL)
+3. Policy conditions not met
+
+**Solution:**
+```typescript
+// Verify authentication
+const { data: { user } } = await supabase.auth.getUser();
+console.log('Current user:', user?.id);
+
+// Ensure usuario_id matches
+const { error } = await supabase
+  .from('transacciones')
+  .insert({
+    usuario_id: user.id,  // ✅ Must match auth.uid()
+    // ... other fields
+  });
+```
+
+### Queries Return Empty Arrays
+
+**Symptom:**
+```typescript
+const { data } = await supabase.from('transacciones').select('*');
+console.log(data); // []
+```
+
+**Causes:**
+1. RLS enabled but no matching rows
+2. Not authenticated
+3. Data belongs to different user
+
+**Debugging:**
+```sql
+-- Check if RLS is enabled
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE tablename = 'transacciones';
+
+-- Check existing policies
+SELECT * FROM pg_policies
+WHERE tablename = 'transacciones';
+
+-- Count total rows (requires service role)
+SELECT COUNT(*) FROM transacciones;
+```
+
+## Migration Guide
+
+### Adding RLS to Existing Data
+
+If you have existing data without `usuario_id`:
+
+```sql
+-- Step 1: Add column (if not exists)
+ALTER TABLE transacciones
+ADD COLUMN IF NOT EXISTS usuario_id UUID REFERENCES auth.users(id);
+
+-- Step 2: Assign existing data to default user
+UPDATE transacciones
+SET usuario_id = 'default-user-uuid'
+WHERE usuario_id IS NULL;
+
+-- Step 3: Make column required
+ALTER TABLE transacciones
+ALTER COLUMN usuario_id SET NOT NULL;
+
+-- Step 4: Enable RLS
+ALTER TABLE transacciones ENABLE ROW LEVEL SECURITY;
+
+-- Step 5: Create policies (see above)
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn about authentication methods
+  </Card>
+  <Card title="API Endpoints" icon="code" href="/api/transactions">
+    Explore available API routes
+  </Card>
+</CardGroup>
+
+## Resources
+
+- [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
+- [Supabase RLS Guide](https://supabase.com/docs/guides/auth/row-level-security)
+- [Security Best Practices](https://supabase.com/docs/guides/auth/managing-user-data)

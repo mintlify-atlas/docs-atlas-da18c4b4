@@ -1,0 +1,382 @@
+---
+title: OCR Receipt Scanning
+description: Automatic receipt scanning and data extraction using AI vision
+icon: camera
+---
+
+## Overview
+
+Upload photos of receipts, invoices, or tickets, and Sistema Financiero will automatically extract:
+- Total amount
+- Merchant/store name
+- Suggested category
+- List of items purchased
+- Transaction date
+
+The OCR feature uses **Google Gemini 2.5 Flash** with vision capabilities for accurate text extraction from images.
+
+<Note>
+  The system validates that uploaded images are actually receipts before processing, preventing accidental uploads of unrelated photos.
+</Note>
+
+## How It Works
+
+<Steps>
+  <Step title="Upload image">
+    Take or upload a photo of your receipt. The image is stored in Supabase Storage.
+  </Step>
+  
+  <Step title="Image validation">
+    AI checks if the image is a valid receipt, invoice, or purchase document.
+    - If valid: proceeds to data extraction
+    - If invalid: returns a helpful error message
+  </Step>
+  
+  <Step title="OCR extraction">
+    Gemini 2.5 Flash analyzes the image and extracts:
+    - Total amount (`monto`)
+    - Store name (`comercio`)
+    - Suggested category (`categoria_sugerida`)
+    - Items purchased (`items`)
+    - Date (`fecha`)
+  </Step>
+  
+  <Step title="Structured response">
+    Data is returned in both human-readable and JSON formats for easy integration.
+  </Step>
+</Steps>
+
+## Example Extractions
+
+### Gas Station Receipt
+
+**Image uploaded:** Receipt from Pemex
+
+**AI Response:**
+```
+📸 TICKET ANALIZADO:
+
+💰 Monto: $450.50
+🏪 Comercio: Pemex
+📁 Categoría sugerida: Transporte
+📋 Items: Magna Premium 30L, Total
+📅 Fecha: 2025-10-06
+
+📝 Descripción: Llenado de combustible en Pemex
+```
+
+**Structured JSON:**
+```json
+{
+  "es_ticket": true,
+  "monto": 450.50,
+  "comercio": "Pemex",
+  "categoria_sugerida": "Transporte",
+  "items": ["Magna Premium 30L", "Total"],
+  "fecha": "2025-10-06",
+  "descripcion": "Llenado de combustible en Pemex"
+}
+```
+
+### Grocery Store Receipt
+
+**Image uploaded:** Receipt from Walmart
+
+**AI Response:**
+```
+📸 TICKET ANALIZADO:
+
+💰 Monto: $350.00
+🏪 Comercio: Walmart
+📁 Categoría sugerida: Alimentación
+📋 Items: Leche, Pan, Huevos, Verduras
+📅 Fecha: 2025-10-09
+
+📝 Descripción: Compra de despensa en Walmart
+```
+
+### Restaurant Receipt
+
+**Image uploaded:** Receipt from a restaurant
+
+**AI Response:**
+```
+📸 TICKET ANALIZADO:
+
+💰 Monto: $280.00
+🏪 Comercio: Restaurante La Casa
+📁 Categoría sugerida: Alimentación
+📋 Items: 2x Tacos, 1x Refresco, Propina
+📅 Fecha: 2025-10-09
+
+📝 Descripción: Comida en restaurante
+```
+
+## Invalid Image Detection
+
+If you upload an image that's not a receipt (screenshot, random photo, etc.):
+
+```
+⚠️ IMAGEN NO RECONOCIDA COMO TICKET
+
+Esta es una captura de pantalla de una conversación de texto, 
+no un ticket o factura.
+
+💡 Sugerencia: Sube una foto de un ticket, factura o recibo de 
+compra para que pueda analizarlo.
+
+Si quieres registrar algo manualmente, dime:
+- ¿Es gasto o ingreso?
+- Monto
+- Comercio/Proveedor
+- Categoría
+```
+
+<Tip>
+  The AI is trained to detect non-receipt images like chat screenshots, random photos, or unrelated documents to prevent false extractions.
+</Tip>
+
+## Category Mapping
+
+The AI automatically suggests the most appropriate category from your system's valid categories:
+
+### Expense Categories
+- Alimentación (Food/Groceries)
+- Transporte (Transportation/Fuel)
+- Vivienda (Housing/Rent/Utilities)
+- Salud (Health/Medical)
+- Entretenimiento (Entertainment)
+- Educación (Education)
+- Otros Gastos (Other Expenses)
+
+### Income Categories
+- Salario (Salary)
+- Ventas (Sales)
+- Servicios (Services)
+- Inversiones (Investments)
+- Otros Ingresos (Other Income)
+
+## Technical Implementation
+
+### API Endpoint
+
+**POST** `/api/upload-image`
+
+**Request:** `multipart/form-data`
+```typescript
+{
+  image: File // Image file from form upload
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  url: string,        // Public URL of uploaded image
+  analysis: string,   // Formatted text response
+  data: {             // Structured JSON data
+    es_ticket: boolean,
+    monto?: number,
+    comercio?: string,
+    categoria_sugerida?: string,
+    items?: string[],
+    fecha?: string,
+    descripcion?: string,
+    razon?: string,      // If not a ticket
+    sugerencia?: string  // If not a ticket
+  }
+}
+```
+
+### Storage Flow
+
+1. **Upload to Supabase Storage:**
+```typescript
+const timestamp = Date.now()
+const fileName = `ticket_${timestamp}_${image.name}`
+
+await supabase.storage
+  .from('facturas')
+  .upload(fileName, imageBytes, {
+    contentType: image.type,
+  })
+```
+
+2. **Get public URL:**
+```typescript
+const { data } = supabase.storage
+  .from('facturas')
+  .getPublicUrl(fileName)
+```
+
+See `/app/api/upload-image/route.ts:17-37`
+
+### Vision API Integration
+
+The system sends the image to Gemini 2.5 Flash with a detailed extraction prompt:
+
+```typescript
+await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL,
+    'X-Title': 'Sistema Financiero - OCR',
+  },
+  body: JSON.stringify({
+    model: 'google/gemini-2.5-flash',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: '...' // Detailed extraction prompt
+          },
+          {
+            type: 'image_url',
+            image_url: { url: imageUrl }
+          }
+        ]
+      }
+    ],
+    max_tokens: 400,
+    temperature: 0.1,
+    response_format: { type: 'json_object' }
+  })
+})
+```
+
+See `/app/api/upload-image/route.ts:40-129`
+
+## OCR Prompt Engineering
+
+The system uses a carefully crafted prompt to ensure accurate extraction:
+
+```text
+Analiza esta imagen y determina si es un ticket/factura válido.
+
+PASO 1: VALIDAR SI ES UN TICKET
+- ¿La imagen muestra un ticket, factura, recibo o comprobante de compra?
+- ¿Tiene información de comercio, monto, items comprados?
+- Si es screenshot de chat, foto aleatoria, o documento que NO sea ticket
+  → marca "es_ticket": false
+
+INSTRUCCIONES SI ES TICKET:
+1. Extrae el MONTO TOTAL (solo número, sin símbolos)
+2. Identifica el COMERCIO/ESTABLECIMIENTO
+3. Sugiere UNA categoría de la lista válida (la más apropiada)
+4. Lista los items principales si son visibles
+5. Extrae fecha si está visible
+
+RESPONDE SOLO CON JSON (sin markdown, sin explicaciones)
+```
+
+Full prompt in `/app/api/upload-image/route.ts:56-114`
+
+<Warning>
+  The `response_format: { type: 'json_object' }` parameter ensures structured JSON responses for reliable parsing.
+</Warning>
+
+## Integration with Chat
+
+The OCR feature integrates with the AI Chat Assistant:
+
+```typescript
+// In chat API
+if (images.length > 0) {
+  openRouterMessages[openRouterMessages.length - 1].content += 
+    `\n\n[El usuario subió ${images.length} imagen(es). 
+    Analiza las imágenes para extraer información del ticket.]`
+}
+```
+
+See `/app/api/chat/route.ts:69-74`
+
+<Tip>
+  You can combine natural language with receipt images: upload a photo and say "registra este gasto" for seamless entry.
+</Tip>
+
+## Error Handling
+
+### Upload Errors
+
+```typescript
+if (uploadError) {
+  throw new Error(`Upload error: ${uploadError.message}`)
+}
+```
+
+### Vision API Errors
+
+```typescript
+if (!visionResponse.ok) {
+  console.error('Vision API error:', errorText)
+  throw new Error(`Vision API error: ${visionResponse.statusText}`)
+}
+```
+
+### JSON Parsing Fallback
+
+```typescript
+try {
+  ocrData = JSON.parse(analysisText)
+} catch (parseError) {
+  // Fallback to plain text
+  ocrData = {
+    monto: null,
+    comercio: 'Desconocido',
+    categoria_sugerida: 'Otros Gastos',
+    items: [],
+    descripcion: analysisText,
+  }
+}
+```
+
+See `/app/api/upload-image/route.ts:145-158`
+
+## Storage Bucket Configuration
+
+Images are stored in the **`facturas`** bucket in Supabase Storage.
+
+<Warning>
+  Ensure the `facturas` bucket exists and has proper public access policies configured in your Supabase project.
+</Warning>
+
+## Model Selection
+
+The system uses **Gemini 2.5 Flash** for optimal performance:
+- Fast processing (typically < 2 seconds)
+- Strong OCR capabilities
+- Multimodal support (text + images)
+- Cost-effective for high-volume usage
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Good lighting" icon="sun">
+    Take photos in well-lit conditions for better text recognition
+  </Card>
+  <Card title="Clear focus" icon="camera">
+    Ensure the receipt is in focus and all text is readable
+  </Card>
+  <Card title="Full receipt" icon="file">
+    Capture the entire receipt including header and total
+  </Card>
+  <Card title="Flat surface" icon="square">
+    Place receipt on a flat surface to avoid distortion
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Chat" icon="messages" href="/features/ai-chat">
+    Use natural language to register extracted transactions
+  </Card>
+  <Card title="Configuration" icon="gear" href="/features/ai-configuration">
+    Configure your OpenRouter API key and model settings
+  </Card>
+</CardGroup>

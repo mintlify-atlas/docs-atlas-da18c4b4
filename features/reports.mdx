@@ -1,0 +1,348 @@
+---
+title: 'Reports & Analytics'
+description: 'Generate comprehensive financial reports with flexible views, filtering, and data export capabilities'
+icon: 'chart-column'
+---
+
+Reports provide detailed views of your financial data with powerful filtering, sorting, and export capabilities for in-depth analysis.
+
+## Overview
+
+The Reports feature offers multiple viewing perspectives on your financial data, from daily snapshots to monthly overviews, with advanced filtering and pagination for handling large datasets.
+
+<Note>
+Reports pull from the same transaction database as the Dashboard but offer more granular control and viewing options.
+</Note>
+
+## Report Views
+
+### Time-Based Views
+
+Choose how to aggregate and display your financial data:
+
+<CardGroup cols={2}>
+  <Card title="Daily View" icon="calendar-day" color="#10b981">
+    Shows transactions grouped by individual days, ideal for:
+    - Daily reconciliation
+    - Tracking day-to-day patterns
+    - Analyzing last 7 days of activity
+  </Card>
+  <Card title="Weekly View" icon="calendar-week" color="#3b82f6">
+    Groups transactions by week number within months:
+    - Week-over-week comparisons
+    - Identifying weekly patterns
+    - Covers last 28 days (4 weeks)
+  </Card>
+  <Card title="Monthly View" icon="calendar" color="#8b5cf6">
+    Aggregates by month for high-level overviews:
+    - Month-to-month trends
+    - Annual planning
+    - Shows last 12 months
+  </Card>
+  <Card title="Custom Range" icon="calendar-range" color="#f59e0b">
+    Select any specific date range:
+    - Project-specific analysis
+    - Quarter or year-end reports
+    - Custom business periods
+  </Card>
+</CardGroup>
+
+### Switching Between Views
+
+<Steps>
+  <Step title="Open Reports">
+    Navigate to the Reports section from the main menu
+  </Step>
+  
+  <Step title="Select View">
+    Click one of the four view buttons:
+    - Diaria (Daily)
+    - Semanal (Weekly)
+    - Mensual (Monthly)
+    - Personalizada (Custom)
+  </Step>
+  
+  <Step title="For Custom: Set Dates">
+    If you selected Custom:
+    1. Click the date picker panel
+    2. Choose start and end dates
+    3. Click "Aplicar" (Apply)
+  </Step>
+  
+  <Step title="View Updates">
+    The report automatically refreshes with the new time frame
+  </Step>
+</Steps>
+
+## Summary Cards
+
+At the top of every report, three summary cards display aggregate metrics:
+
+### Total Income
+
+- **Color**: Green gradient background
+- **Shows**: Sum of all income transactions in the selected period
+- **Format**: Mexican Pesos with two decimal places
+
+### Total Expenses
+
+- **Color**: Red gradient background
+- **Shows**: Sum of all expense transactions in the selected period
+- **Format**: Mexican Pesos with two decimal places
+
+### Net Balance
+
+- **Color**: Blue gradient (positive) or Orange gradient (negative)
+- **Shows**: Income minus expenses
+- **Indicator**: Color changes based on whether you're in the positive or negative
+
+## Filtering & Sorting
+
+### Transaction Type Filters
+
+Filter the report to show only specific transaction types:
+
+- **Todos** (All): Display all transactions
+- **Ingresos** (Income): Show only income transactions (green)
+- **Gastos** (Expenses): Show only expense transactions (red)
+
+<Tip>
+The transaction count updates in real-time as you apply filters, helping you see exactly how many transactions match your criteria.
+</Tip>
+
+### Column Sorting
+
+Click any column header to sort by that field:
+
+- **Fecha** (Date/Time): Sort chronologically
+- **Tipo** (Type): Group by income vs. expense
+- **Categoría** (Category): Alphabetical by category
+- **Monto** (Amount): Numerical order by transaction size
+- **Método** (Payment Method): Group by payment type
+
+**Sort Direction:**
+- First click: Ascending order (↑)
+- Second click: Descending order (↓)
+- Visual indicator shows which column is sorted and direction
+
+## Transaction Table
+
+### Grouped Display
+
+Transactions are grouped by time period based on your selected view:
+
+- **Daily View**: Groups by date (e.g., "06/10/2025")
+- **Weekly View**: Groups by month and week number (e.g., "octubre 2025 - Semana 2")
+- **Monthly View**: Groups by month (e.g., "octubre 2025")
+
+### Group Headers
+
+Each group shows:
+- Period label (date/week/month)
+- Total for that period (income minus expenses)
+- Color-coded: Green for positive, red for negative
+
+### Transaction Rows
+
+Each transaction displays:
+
+| Column | Description | Format |
+|--------|-------------|--------|
+| **Fecha/Hora** | Date and time | DD/MM/YYYY HH:MM |
+| **Tipo** | Transaction type | Badge: Green (Ingreso) or Red (Gasto) |
+| **Categoría** | Category name | Text |
+| **Descripción** | Details or notes | Text (truncated if long) |
+| **Método** | Payment method | Efectivo, Tarjeta, or Transferencia |
+| **Monto** | Amount | +/- $XXX.XX MXN |
+
+### Visual Design
+
+- **Row Colors**: 
+  - Income rows: Light green background
+  - Expense rows: Light red background
+- **Hover Effect**: Rows become slightly darker on hover
+- **Dark Mode**: Colors adapt for dark theme
+- **Responsive**: Table scrolls horizontally on small screens
+
+## Pagination Controls
+
+Handle large datasets efficiently with built-in pagination:
+
+### Items Per Page
+
+Choose how many transactions to display:
+- **20**: Default, good for quick scanning
+- **50**: Medium datasets
+- **100**: Larger reviews
+- **500**: Export-sized views
+
+### Navigation
+
+- **Anterior** (Previous): Go to previous page
+- **Siguiente** (Next): Go to next page
+- **Page Indicator**: Shows current page and total pages
+- **Range Display**: Shows which transactions are visible (e.g., "Showing 1-20 of 287")
+
+<Note>
+Pagination resets to page 1 whenever you change filters or sorting to ensure you don't miss data.
+</Note>
+
+## Data Export
+
+### Preparing for Export
+
+<Steps>
+  <Step title="Set Your Criteria">
+    - Select the time period (view)
+    - Apply any filters (type, category)
+    - Set items per page to 500 for maximum data
+  </Step>
+  
+  <Step title="Navigate All Pages">
+    Use pagination to cycle through all pages, reviewing the data
+  </Step>
+  
+  <Step title="Browser Tools">
+    Use browser developer tools to access the API data directly:
+    ```javascript
+    fetch('/api/transacciones?vista=mensual')
+      .then(r => r.json())
+      .then(data => console.log(data))
+    ```
+  </Step>
+  
+  <Step title="Process Data">
+    Copy the JSON data and convert to CSV/Excel using your preferred tool
+  </Step>
+</Steps>
+
+<Tip>
+For regular exports, consider building a simple script that calls the `/api/transacciones` endpoint with your desired parameters.
+</Tip>
+
+## Common Report Workflows
+
+### Daily Reconciliation
+
+1. Select **Daily View**
+2. Review today's transactions at the top
+3. Compare amounts with bank statements
+4. Verify all transactions are recorded
+5. Note any discrepancies for investigation
+
+### Weekly Business Review
+
+1. Select **Weekly View**
+2. Focus on current week's group
+3. Compare with previous week
+4. Identify trends: which days are highest revenue?
+5. Adjust operations based on patterns
+
+### Monthly Financial Close
+
+1. Select **Monthly View**
+2. Choose the completed month
+3. Filter by **Gastos** to review all expenses
+4. Switch to **Ingresos** to verify all income
+5. Review the net balance for the month
+6. Compare with budget targets
+
+### Tax Preparation
+
+1. Use **Custom Range** for tax year
+2. Set date range (e.g., Jan 1 - Dec 31)
+3. Set items per page to **500**
+4. Filter by category to separate deductible expenses
+5. Export transaction data
+6. Provide to accountant or tax software
+
+### Budget Analysis
+
+1. Select **Monthly View** for last 6-12 months
+2. Note the income and expense totals
+3. Calculate averages
+4. Identify spending categories consuming most budget
+5. Set targets for next period
+
+## Performance Considerations
+
+### Data Limits
+
+The API enforces a maximum of **500 transactions** per request to maintain performance.
+
+**For larger datasets:**
+- Use pagination to navigate through data
+- Apply filters to reduce result set
+- Use narrower date ranges
+- Query by category for focused analysis
+
+### Loading States
+
+The report displays a loading spinner during data fetches:
+- Typically completes in under 1 second
+- May take longer for custom ranges spanning multiple months
+- All filtering and sorting happens client-side after initial load
+
+## Accessibility Features
+
+- **Keyboard Navigation**: Tab through filters and pagination controls
+- **Screen Reader Support**: Table headers and labels properly tagged
+- **High Contrast**: Works with browser high contrast modes
+- **Focus Indicators**: Clear focus outlines on interactive elements
+- **Responsive Text**: Scales with browser zoom
+
+## API Integration
+
+Developers can access report data programmatically:
+
+### Endpoint
+
+```
+GET /api/transacciones
+```
+
+### Query Parameters
+
+| Parameter | Values | Description |
+|-----------|--------|-------------|
+| `vista` | `diaria`, `semanal`, `mensual`, `personalizada` | Time aggregation view |
+| `fecha_inicio` | `YYYY-MM-DD` | Start date (required for personalizada) |
+| `fecha_fin` | `YYYY-MM-DD` | End date (required for personalizada) |
+
+### Example Requests
+
+```bash
+# Monthly view (last 12 months)
+curl https://your-domain.com/api/transacciones?vista=mensual
+
+# Custom date range
+curl https://your-domain.com/api/transacciones?vista=personalizada&fecha_inicio=2025-01-01&fecha_fin=2025-03-31
+
+# Weekly view
+curl https://your-domain.com/api/transacciones?vista=semanal
+```
+
+### Response Format
+
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "fecha": "2025-10-09T14:30:00Z",
+      "tipo": "gasto",
+      "categoria": "Alimentación",
+      "monto": 450.50,
+      "descripcion": "Compra en supermercado",
+      "metodo_pago": "tarjeta"
+    }
+  ],
+  "vista": "mensual"
+}
+```
+
+## Related Features
+
+- [Dashboard](/features/dashboard) - Real-time overview of financial metrics
+- [Manual Entry](/features/manual-entry) - Add transactions to analyze
+- [Recurring Expenses](/features/recurring-expenses) - Automatic expense tracking

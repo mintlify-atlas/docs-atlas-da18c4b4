@@ -1,0 +1,161 @@
+---
+title: 'Payment Methods'
+description: 'Track how you pay for expenses and receive income'
+icon: 'credit-card'
+---
+
+Sistema Financiero tracks the payment method used for each transaction, helping you understand cash flow across different payment channels.
+
+## Available Payment Methods
+
+The system supports three payment methods:
+
+<CardGroup cols={3}>
+  <Card title="Efectivo" icon="money-bill-1" color="#10b981">
+    Cash payments and receipts
+  </Card>
+  <Card title="Tarjeta" icon="credit-card" color="#3b82f6">
+    Credit and debit card transactions
+  </Card>
+  <Card title="Transferencia" icon="building-columns" color="#8b5cf6">
+    Bank transfers and wire payments
+  </Card>
+</CardGroup>
+
+## When to Use Each Method
+
+<Accordion title="Efectivo (Cash)">
+  Use this for:
+  - Cash payments at physical locations
+  - Cash income from customers
+  - Petty cash expenses
+  - Small purchases without electronic payment
+  
+  **Best for**: Daily operations, small vendors, tips, and cash-based businesses.
+</Accordion>
+
+<Accordion title="Tarjeta (Card)">
+  Use this for:
+  - Credit card purchases
+  - Debit card transactions
+  - Point-of-sale (POS) payments
+  - Online purchases with card
+  - Subscription payments
+  
+  **Best for**: Trackable purchases, online shopping, and building purchase history.
+</Accordion>
+
+<Accordion title="Transferencia (Transfer)">
+  Use this for:
+  - Bank-to-bank transfers
+  - Wire payments
+  - Direct deposits
+  - SPEI and other electronic transfers
+  - Salary payments
+  
+  **Best for**: Large transactions, formal business payments, and inter-account transfers.
+</Accordion>
+
+## Setting Payment Methods
+
+### Manual Transaction Entry
+
+When registering a transaction manually:
+
+1. Fill in the transaction details (type, amount, category)
+2. Select the **Método de Pago** from the dropdown
+3. The default is **Efectivo**, but you can change it
+4. Submit the transaction
+
+<Note>
+The payment method field is always available regardless of transaction type (expense or income).
+</Note>
+
+### AI Chat Registration
+
+Specify the payment method in your natural language prompt:
+
+```
+Register a $500 expense for Alimentación paid with Tarjeta
+Add $2000 income from Tours, payment method Transferencia
+Record $150 Transporte expense, cash payment
+```
+
+If you don't specify a payment method, the system defaults to **Efectivo**.
+
+### Excel/CSV Import
+
+Include the `metodo_pago` column in your CSV file:
+
+```csv
+fecha,tipo,categoria,monto,metodo_pago
+2025-10-06,gasto,Alimentación,350,Tarjeta
+2025-10-06,ingreso,Tours,1200,Efectivo
+2025-10-06,gasto,Transporte,500,Efectivo
+```
+
+<Warning>
+Valid values are: `Efectivo`, `Tarjeta`, `Transferencia`. Other values will default to Efectivo.
+</Warning>
+
+### Recurring Expenses
+
+When setting up recurring expenses (subscriptions), you can assign a default payment method:
+
+1. Navigate to **Gastos Recurrentes**
+2. Create or edit a recurring expense
+3. Select the payment method (typically **Tarjeta** for subscriptions)
+4. The system will use this method for all automatic charges
+
+<Tip>
+Most subscriptions should use "Tarjeta" as the payment method since they typically charge credit/debit cards automatically.
+</Tip>
+
+## Analyzing by Payment Method
+
+### Dashboard View
+
+The dashboard provides insights into payment method distribution:
+
+- Total spent per payment method
+- Cash vs. digital payment ratios
+- Payment method trends over time
+
+### Data Views Filtering
+
+Filter transactions by payment method to:
+
+- Reconcile credit card statements
+- Track cash flow
+- Verify bank transfer records
+- Identify payment patterns
+
+### Reports
+
+Generate reports grouped by payment method to:
+
+- See which payment channels you use most
+- Calculate cash requirements
+- Track digital payment adoption
+- Prepare for tax documentation
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Be Consistent" icon="check">
+    Always record the actual payment method used to maintain accurate cash flow tracking.
+  </Card>
+  <Card title="Reconcile Regularly" icon="calendar">
+    Match your recorded transactions with bank and card statements monthly.
+  </Card>
+  <Card title="Track Cash Carefully" icon="wallet">
+    Cash transactions are harder to trace, so record them immediately.
+  </Card>
+  <Card title="Use Categories Together" icon="layer-group">
+    Combine payment method tracking with categories for deeper insights.
+  </Card>
+</CardGroup>
+
+<Note>
+Payment method tracking helps with bank reconciliation, cash flow management, and understanding your payment preferences.
+</Note>
