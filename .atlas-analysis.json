@@ -1,0 +1,128 @@
+{
+  "projectType": "saas",
+  "projectName": "Sistema Financiero",
+  "projectDescription": "Personal finance management system with AI-powered transaction entry, OCR receipt scanning, and real-time analytics",
+  "theme": "almond",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Get Started",
+        "groups": [
+          {
+            "group": "Introduction",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "architecture"
+            ]
+          },
+          {
+            "group": "Setup",
+            "pages": [
+              "setup/installation",
+              "setup/supabase-configuration",
+              "setup/environment-variables",
+              "setup/deployment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Features",
+        "groups": [
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/dashboard",
+              "features/manual-entry",
+              "features/recurring-expenses",
+              "features/reports"
+            ]
+          },
+          {
+            "group": "AI Features",
+            "pages": [
+              "features/ai-chat",
+              "features/ocr-scanning",
+              "features/ai-configuration"
+            ]
+          },
+          {
+            "group": "Data Management",
+            "pages": [
+              "features/categories",
+              "features/payment-methods",
+              "features/excel-import"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api/authentication",
+              "api/row-level-security"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/transactions",
+              "api/chat-stream",
+              "api/upload-image",
+              "api/recurring-expenses"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Guides",
+            "pages": [
+              "development/database-schema",
+              "development/adding-features",
+              "development/customization",
+              "development/troubleshooting"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/code-structure"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Interactive dashboard with KPIs and trend charts",
+    "AI-powered chat interface for natural language transaction entry",
+    "OCR receipt scanning with automatic data extraction",
+    "Manual transaction entry with validation",
+    "Recurring expense automation",
+    "Daily, weekly, and monthly reporting",
+    "Multi-category expense tracking",
+    "Real-time balance calculations",
+    "Dark mode support",
+    "Supabase-powered authentication and data storage"
+  ],
+  "publicApiSurface": [
+    "GET /api/transacciones - Fetch transactions with filtering",
+    "POST /api/chat/stream - AI chat with streaming responses",
+    "POST /api/upload-image - OCR image processing",
+    "POST /api/gastos-recurrentes/procesar - Process recurring expenses",
+    "GET /api/gastos-recurrentes - Fetch recurring expenses",
+    "POST /api/upload-excel - Import transactions from Excel",
+    "POST /api/auth - User authentication"
+  ]
+}
