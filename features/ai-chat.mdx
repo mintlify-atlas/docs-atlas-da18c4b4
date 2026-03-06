@@ -47,7 +47,7 @@ The chat assistant uses **function calling** to understand your intent and autom
 
 ### Basic Expense
 
-```
+```text
 User: Gasté 200 pesos en Uber
 AI: ✅ Gasto registrado exitosamente!
 
@@ -56,11 +56,11 @@ AI: ✅ Gasto registrado exitosamente!
 📝 Descripción: Uber
 💳 Método: Efectivo
 👤 Registrado por: Usuario
-```
+```text
 
 ### Income Registration
 
-```
+```text
 User: Recibí 8000 pesos de salario
 AI: ✅ Ingreso registrado exitosamente!
 
@@ -69,11 +69,11 @@ AI: ✅ Ingreso registrado exitosamente!
 📝 Descripción: N/A
 💳 Método: Transferencia
 👤 Registrado por: Usuario
-```
+```text
 
 ### Missing Information
 
-```
+```text
 User: Gasté 500 pesos
 AI: Entiendo que gastaste $500. ¿En qué categoría clasificamos este gasto?
     - Alimentación
@@ -86,7 +86,7 @@ AI: Entiendo que gastaste $500. ¿En qué categoría clasificamos este gasto?
 
 User: Alimentación
 AI: ✅ Gasto registrado exitosamente!
-```
+```text
 
 ## Available Categories
 
@@ -149,7 +149,7 @@ The AI has access to two functions defined in the API:
     required: ['monto', 'categoria']
   }
 }
-```
+```text
 
 See implementation in `/app/api/chat/route.ts:89-124`
 
@@ -178,7 +178,7 @@ See implementation in `/app/api/chat/route.ts:89-124`
     required: ['monto', 'categoria']
   }
 }
-```
+```text
 
 See implementation in `/app/api/chat/route.ts:125-159`
 
@@ -200,7 +200,7 @@ gastos e ingresos de forma conversacional.
 - Si falta información (categoría, monto), pregunta
 - Después de registrar, confirma con un resumen
 - Si hay imagen, analízala y extrae la información automáticamente
-```
+```text
 
 Full prompt available in `/app/api/chat/route.ts:33-57`
 
@@ -220,7 +220,7 @@ Full prompt available in `/app/api/chat/route.ts:33-57`
   }>
   images?: string[] // Optional: for OCR integration
 }
-```
+```text
 
 **Response:**
 ```typescript
@@ -229,7 +229,7 @@ Full prompt available in `/app/api/chat/route.ts:33-57`
   usage?: object   // Token usage statistics
   model?: string   // Model used
 }
-```
+```text
 
 ### Conversation History
 
@@ -240,7 +240,7 @@ messages.slice(-10).map(msg => ({
   role: msg.role,
   content: msg.content
 }))
-```
+```text
 
 See `/app/api/chat/route.ts:59-67`
 
@@ -260,7 +260,7 @@ const { error } = await supabase
     registrado_por: functionArgs.registrado_por || 'Usuario',
     fecha_hora: new Date().toISOString(),
   })
-```
+```text
 
 See `/app/api/chat/route.ts:183-193`
 
@@ -272,11 +272,11 @@ See `/app/api/chat/route.ts:183-193`
 
 If registration fails, the AI will return a friendly error message:
 
-```
+```text
 ❌ Error al registrar gasto: [error details]
 
 Por favor, intenta de nuevo o usa el formulario manual.
-```
+```text
 
 ## Next Steps
 

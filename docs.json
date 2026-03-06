@@ -89,6 +89,7 @@
               "api/transactions",
               "api/chat-stream",
               "api/upload-image",
+              "api/upload-excel",
               "api/recurring-expenses"
             ]
           }

@@ -1,0 +1,309 @@
+---
+title: 'Upload Excel/CSV'
+api: 'POST /api/upload-excel'
+description: 'Bulk import transactions from CSV files'
+---
+
+Upload and process CSV files containing multiple transactions. This endpoint validates the CSV format, processes each row, and inserts valid transactions into the database in a single batch operation.
+
+## Endpoint
+
+```
+POST /api/upload-excel
+```
+
+## Request
+
+### Headers
+
+<ParamField header="Content-Type" type="string" required>
+  Must be `multipart/form-data` for file upload
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="file" type="File" required>
+  CSV file containing transactions to import
+  
+  **File requirements:**
+  - File extension must be `.csv`
+  - Must include header row with column names
+  - UTF-8 encoding recommended
+</ParamField>
+
+## CSV Format
+
+### Required Columns
+
+The CSV file must include these columns in the header row:
+
+<ParamField path="fecha" type="string" required>
+  Transaction date in ISO format: `YYYY-MM-DD`
+  
+  Example: `2025-10-06`
+</ParamField>
+
+<ParamField path="tipo" type="string" required>
+  Transaction type (case-insensitive)
+  
+  Valid values: `gasto` (expense) or `ingreso` (income)
+</ParamField>
+
+<ParamField path="categoria" type="string" required>
+  Category name (must match exactly, including accents)
+  
+  **Valid expense categories:** Alimentación, Transporte, Vivienda, Salud, Entretenimiento, Educación, Suscripciones, Otros Gastos
+  
+  **Valid income categories:** Salario, Ventas, Servicios, Inversiones, Tours, Comedor, Reservaciones, Anticipos, Otros Ingresos
+</ParamField>
+
+<ParamField path="monto" type="number" required>
+  Transaction amount (positive number, use decimal point)
+  
+  Example: `1200.50`
+</ParamField>
+
+### Optional Columns
+
+<ParamField path="descripcion" type="string">
+  Description or notes about the transaction
+</ParamField>
+
+<ParamField path="num_pax" type="integer">
+  Number of people (useful for tour/restaurant businesses)
+</ParamField>
+
+<ParamField path="metodo_pago" type="string">
+  Payment method
+  
+  Valid values: `Efectivo`, `Tarjeta`, `Transferencia`
+  
+  Default: `Efectivo`
+</ParamField>
+
+<ParamField path="registrado_por" type="string">
+  Name of person who registered the transaction
+  
+  Default: `Armando`
+</ParamField>
+
+## Response
+
+### Success Response (200)
+
+<ResponseField name="success" type="boolean">
+  Indicates successful import
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Summary message with number of transactions imported
+</ResponseField>
+
+<ResponseField name="count" type="number">
+  Number of transactions successfully imported
+</ResponseField>
+
+<ResponseField name="errors" type="array">
+  Array of error messages for rows that failed validation (if any)
+</ResponseField>
+
+<ResponseField name="transactions" type="array">
+  Array of inserted transaction objects with their database IDs
+</ResponseField>
+
+### Error Response (400/500)
+
+<ResponseField name="error" type="string">
+  Error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="details" type="string">
+  Additional error details (if available)
+</ResponseField>
+
+<ResponseField name="hint" type="string">
+  Helpful hint for fixing the error (for format errors)
+</ResponseField>
+
+## Examples
+
+### Example CSV File
+
+```csv
+fecha,tipo,categoria,monto,descripcion,num_pax,metodo_pago,registrado_por
+2025-10-06,ingreso,Tours,1200,Tour grupal,15,Efectivo,Armando
+2025-10-06,gasto,Alimentación,350,Comida para grupo,15,Tarjeta,Maria
+2025-10-07,gasto,Transporte,450,Gasolina,,Efectivo,Carlos
+2025-10-07,ingreso,Ventas,800,Venta de productos,,Transferencia,Armando
+```
+
+### Successful Upload
+
+<CodeGroup>
+```javascript JavaScript
+const formData = new FormData();
+formData.append('file', csvFile);
+
+const response = await fetch('/api/upload-excel', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await response.json();
+console.log(result);
+// {
+//   success: true,
+//   message: "Se registraron 4 transacciones exitosamente",
+//   count: 4,
+//   transactions: [...]
+// }
+```
+
+```python Python
+import requests
+
+files = {'file': open('transactions.csv', 'rb')}
+response = requests.post(
+    'http://localhost:3000/api/upload-excel',
+    files=files
+)
+
+print(response.json())
+# {
+#   "success": true,
+#   "message": "Se registraron 4 transacciones exitosamente",
+#   "count": 4,
+#   "transactions": [...]
+# }
+```
+
+```bash cURL
+curl -X POST http://localhost:3000/api/upload-excel \
+  -F "file=@transactions.csv"
+
+# Response:
+# {
+#   "success": true,
+#   "message": "Se registraron 4 transacciones exitosamente",
+#   "count": 4,
+#   "transactions": [...]
+# }
+```
+</CodeGroup>
+
+### Upload with Validation Errors
+
+If some rows fail validation, they will be skipped and reported in the `errors` array:
+
+```json
+{
+  "success": true,
+  "message": "Se registraron 3 transacciones exitosamente",
+  "count": 3,
+  "errors": [
+    "Fila 2: Tipo debe ser 'gasto' o 'ingreso'",
+    "Fila 5: Monto inválido"
+  ],
+  "transactions": [...]
+}
+```
+
+### Error: Missing Required Columns
+
+```json
+{
+  "error": "Faltan columnas requeridas: fecha, monto",
+  "hint": "Formato esperado: fecha,tipo,categoria,monto,descripcion,num_pax,metodo_pago,registrado_por"
+}
+```
+
+### Error: Invalid File Type
+
+```json
+{
+  "error": "Solo se permiten archivos CSV (.csv)"
+}
+```
+
+### Error: Empty File
+
+```json
+{
+  "error": "El archivo está vacío o no tiene datos"
+}
+```
+
+## Validation Rules
+
+<Note>
+  The endpoint validates each row before insertion. Invalid rows are skipped and reported in the `errors` array, but valid rows are still imported.
+</Note>
+
+**Row-level validations:**
+- All required columns must have values
+- `tipo` must be exactly `gasto` or `ingreso` (case-insensitive)
+- `monto` must be a valid positive number
+- `fecha` must be in valid date format (YYYY-MM-DD)
+- Number of columns in each row must match header
+
+**File-level validations:**
+- File must be CSV format (.csv extension)
+- Must have at least 2 lines (header + data)
+- Must include all required columns: fecha, tipo, categoria, monto
+
+## Best Practices
+
+<Tip>
+  **Test with a small file first:** Upload a CSV with 2-3 transactions to verify the format before bulk importing.
+</Tip>
+
+<Tip>
+  **Use the template:** Download the template from the Upload Excel UI page to ensure correct format.
+</Tip>
+
+<Warning>
+  **Check category names:** Category names must match exactly, including accents. `Alimentacion` (without accent) will fail validation.
+</Warning>
+
+<Tip>
+  **Batch size:** The endpoint can handle large files, but for very large imports (1000+ transactions), consider splitting into smaller batches.
+</Tip>
+
+## Common Errors
+
+<AccordionGroup>
+  <Accordion title="Número de columnas incorrecto">
+    This error occurs when a row has more or fewer values than the header row.
+    
+    **Solution:** Check for extra commas or missing values in the CSV.
+  </Accordion>
+  
+  <Accordion title="Tipo debe ser 'gasto' o 'ingreso'">
+    The `tipo` column contains an invalid value.
+    
+    **Solution:** Use only `gasto` or `ingreso` (case-insensitive).
+  </Accordion>
+  
+  <Accordion title="Monto inválido">
+    The `monto` column contains a non-numeric value or zero/negative number.
+    
+    **Solution:** Use positive numbers with decimal point (e.g., `150.50`).
+  </Accordion>
+  
+  <Accordion title="Error al insertar en BD">
+    Database error during insertion.
+    
+    **Solution:** Check that all category names are valid and Supabase connection is working.
+  </Accordion>
+</AccordionGroup>
+
+## Related Endpoints
+
+<CardGroup cols={2}>
+  <Card title="Transactions API" icon="database" href="/api/transactions">
+    Fetch imported transactions
+  </Card>
+  <Card title="Excel Import Feature" icon="file-excel" href="/features/excel-import">
+    User guide for the Excel import UI
+  </Card>
+</CardGroup>

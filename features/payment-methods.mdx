@@ -75,11 +75,11 @@ The payment method field is always available regardless of transaction type (exp
 
 Specify the payment method in your natural language prompt:
 
-```
+```text
 Register a $500 expense for Alimentación paid with Tarjeta
 Add $2000 income from Tours, payment method Transferencia
 Record $150 Transporte expense, cash payment
-```
+```text
 
 If you don't specify a payment method, the system defaults to **Efectivo**.
 
@@ -92,7 +92,7 @@ fecha,tipo,categoria,monto,metodo_pago
 2025-10-06,gasto,Alimentación,350,Tarjeta
 2025-10-06,ingreso,Tours,1200,Efectivo
 2025-10-06,gasto,Transporte,500,Efectivo
-```
+```text
 
 <Warning>
 Valid values are: `Efectivo`, `Tarjeta`, `Transferencia`. Other values will default to Efectivo.
